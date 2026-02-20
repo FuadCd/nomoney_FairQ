@@ -51,11 +51,8 @@ HackEd/
 # Install all dependencies
 npm run install:all
 
-# Terminal 1: Start backend
-npm run start:backend
-
-# Terminal 2: Start frontend
-npm run start:frontend
+# From root directory run:
+npm run dev
 ```
 
 - **API**: http://localhost:3000/api
