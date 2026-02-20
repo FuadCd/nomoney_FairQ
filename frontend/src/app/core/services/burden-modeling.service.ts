@@ -1,0 +1,37 @@
+import { Injectable } from '@angular/core';
+import { ApiService } from './api.service';
+import { Observable } from 'rxjs';
+
+export interface BurdenCurvePoint {
+  timeMinutes: number;
+  distressProbability: number;
+  lwbsProbability: number;
+  returnVisitRisk: number;
+}
+
+export interface ComputeBurdenInput {
+  facilityId: string;
+  vulnerabilityMultiplier: number;
+  estimatedCtasLevel: number;
+  waitTimeMinutes: number;
+  checkInResponses?: {
+    discomfortLevel?: number;
+    assistanceRequested?: string[];
+    intendsToStay?: boolean;
+    timestamp: string;
+  }[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class BurdenModelingService {
+  constructor(private api: ApiService) {}
+
+  computeBurden(input: ComputeBurdenInput): Observable<{
+    burdenCurve: BurdenCurvePoint[];
+    equityGapScore: number;
+    baselineCurve: unknown[];
+    confidenceInterval: number;
+  }> {
+    return this.api.post('/burden-modeling/compute', input);
+  }
+}
