@@ -45,13 +45,13 @@ import { I18nService } from '../patient.component';
       }
       h2 {
         font-size: 1.5rem;
-        color: #2e7d32;
+        color: var(--p-green, #2e7d32);
         margin: 0 0 0.75rem;
       }
       .pid {
         font-size: 0.95rem;
-        color: #0d47a1;
-        background: #e3f2fd;
+        color: var(--p-accent, #0d47a1);
+        background: var(--p-light-accent, #e3f2fd);
         display: inline-block;
         padding: 0.4rem 1rem;
         border-radius: 8px;
@@ -61,19 +61,19 @@ import { I18nService } from '../patient.component';
       .time {
         font-size: 1.25rem;
         font-weight: 600;
-        color: #1a1a1a;
+        color: var(--p-fg, #1a1a1a);
         margin: 0 0 0.5rem;
       }
       .message {
         font-size: 1.1rem;
-        color: #555;
+        color: var(--p-muted, #555);
         margin: 0 0 1.5rem;
       }
       .checkin-link {
         display: inline-block;
         padding: 0.75rem 2rem;
-        background: #0d47a1;
-        color: white;
+        background: var(--p-accent, #0d47a1);
+        color: var(--p-accent-fg, white);
         border-radius: 12px;
         text-decoration: none;
         font-weight: 600;
@@ -83,7 +83,7 @@ import { I18nService } from '../patient.component';
         transition: background 0.15s;
       }
       .checkin-link:active {
-        background: #1565c0;
+        opacity: 0.85;
       }
     `,
   ],

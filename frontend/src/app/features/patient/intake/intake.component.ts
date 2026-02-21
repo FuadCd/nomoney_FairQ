@@ -55,7 +55,7 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
       .progress {
         text-align: center;
         font-weight: 600;
-        color: #0d47a1;
+        color: var(--p-accent, #0d47a1);
         margin-bottom: 0.5rem;
         font-size: 0.95rem;
       }
@@ -68,7 +68,7 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
       }
       .progress-fill {
         height: 100%;
-        background: #0d47a1;
+        background: var(--p-accent, #0d47a1);
         border-radius: 3px;
         transition: width 0.3s ease;
       }

@@ -22,8 +22,12 @@ import { Patient } from '../../models/patient.model';
         </div>
       </div>
 
-      <button class="confirm-btn" (click)="onConfirm()" [disabled]="loading()"
-              [attr.aria-label]="i18n.t('confirmButton')">
+      <button
+        class="confirm-btn"
+        (click)="onConfirm()"
+        [disabled]="loading()"
+        [attr.aria-label]="i18n.t('confirmButton')"
+      >
         @if (loading()) {
           <span class="spinner"></span>
         } @else {
@@ -40,8 +44,8 @@ import { Patient } from '../../models/patient.model';
         gap: 1.5rem;
       }
       .passport {
-        background: white;
-        border: 2px solid #0d47a1;
+        background: var(--p-card-bg, white);
+        border: 2px solid var(--p-accent, #0d47a1);
         border-radius: 16px;
         padding: 1.5rem;
         text-align: center;
@@ -49,13 +53,13 @@ import { Patient } from '../../models/patient.model';
       }
       .passport-title {
         font-size: 1.1rem;
-        color: #0d47a1;
+        color: var(--p-accent, #0d47a1);
         margin: 0 0 0.75rem;
       }
       .passport-id {
         font-size: 1.6rem;
         font-weight: 700;
-        color: #1a1a1a;
+        color: var(--p-fg, #1a1a1a);
         letter-spacing: 3px;
         margin-bottom: 0.75rem;
         font-family: monospace;
@@ -69,14 +73,14 @@ import { Patient } from '../../models/patient.model';
       }
       .passport-urgency {
         font-size: 1rem;
-        color: #555;
+        color: var(--p-muted, #555);
       }
       .confirm-btn {
         width: 100%;
         min-height: 64px;
         font-size: 1.2rem;
         font-weight: 700;
-        background: #2e7d32;
+        background: var(--p-green, #2e7d32);
         color: white;
         border: none;
         border-radius: 16px;
@@ -95,14 +99,17 @@ import { Patient } from '../../models/patient.model';
       }
       .spinner {
         display: inline-block;
-        width: 24px; height: 24px;
-        border: 3px solid rgba(255,255,255,0.4);
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(255, 255, 255, 0.4);
         border-top-color: white;
         border-radius: 50%;
         animation: spin 0.6s linear infinite;
       }
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
     `,
   ],

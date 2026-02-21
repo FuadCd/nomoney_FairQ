@@ -64,6 +64,7 @@ const EN: Record<string, string> = {
   largeText: 'Large text',
   patientId: 'Patient ID',
   waitingSince: 'Waiting since check-in',
+  ttsLabel: 'Read aloud',
 };
 
 const FR: Record<string, string> = {
@@ -105,7 +106,7 @@ const FR: Record<string, string> = {
   checkinLeave: 'Pensez-vous partir ?',
   needInterpreter: 'Interprète',
   needQuietSpace: 'Espace calme',
-  needInfo: 'Plus d\'info',
+  needInfo: "Plus d'info",
   needMobility: 'Aide à la mobilité',
   needNone: 'Aucun',
   leaveStaying: 'Je reste',
@@ -113,11 +114,12 @@ const FR: Record<string, string> = {
   leaveThinking: 'Je pense partir',
   thankYou: 'Merci !',
   thankYouMessage: 'Votre réponse a été enregistrée.',
-  returnToWaiting: 'Retour à la salle d\'attente...',
+  returnToWaiting: "Retour à la salle d'attente...",
   highContrast: 'Contraste élevé',
   largeText: 'Grand texte',
   patientId: 'ID Patient',
-  waitingSince: 'En attente depuis l\'enregistrement',
+  waitingSince: "En attente depuis l'enregistrement",
+  ttsLabel: 'Lecture vocale',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -152,8 +154,13 @@ export class A11yModeService {
   readonly highContrast = signal(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('a11y_hc') === '1',
   );
-  readonly largeText = signal(
-    typeof sessionStorage !== 'undefined' && sessionStorage.getItem('a11y_lt') === '1',
+  readonly fontScale = signal(
+    typeof sessionStorage !== 'undefined'
+      ? +(sessionStorage.getItem('a11y_fs') ?? '1')
+      : 1,
+  );
+  readonly tts = signal(
+    typeof sessionStorage !== 'undefined' && sessionStorage.getItem('a11y_tts') === '1',
   );
 
   toggleHighContrast(): void {
@@ -164,11 +171,40 @@ export class A11yModeService {
     }
   }
 
-  toggleLargeText(): void {
-    const next = !this.largeText();
-    this.largeText.set(next);
+  increaseFontSize(): void {
+    const next = Math.min(this.fontScale() + 0.15, 1.75);
+    this.fontScale.set(+next.toFixed(2));
+    this._persistFs();
+  }
+
+  decreaseFontSize(): void {
+    const next = Math.max(this.fontScale() - 0.15, 0.85);
+    this.fontScale.set(+next.toFixed(2));
+    this._persistFs();
+  }
+
+  toggleTts(): void {
+    const next = !this.tts();
+    this.tts.set(next);
     if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem('a11y_lt', next ? '1' : '0');
+      sessionStorage.setItem('a11y_tts', next ? '1' : '0');
+    }
+    if (!next && typeof speechSynthesis !== 'undefined') {
+      speechSynthesis.cancel();
+    }
+  }
+
+  speak(text: string): void {
+    if (!this.tts() || typeof speechSynthesis === 'undefined') return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en';
+    speechSynthesis.speak(u);
+  }
+
+  private _persistFs(): void {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('a11y_fs', this.fontScale().toString());
     }
   }
 }
@@ -178,28 +214,19 @@ export class A11yModeService {
   standalone: true,
   imports: [RouterOutlet],
   template: `
-    <div class="patient-layout"
-         [class.hc]="a11y.highContrast()"
-         [class.lt]="a11y.largeText()">
+    <div class="patient-layout" [class.hc]="a11y.highContrast()" [style.fontSize]="a11y.fontScale() + 'rem'">
       <header class="header">
         <div class="header-top">
           <h1>AccessER</h1>
           <div class="a11y-toggles">
-            <button class="toggle-btn" (click)="a11y.toggleHighContrast()"
-                    [class.on]="a11y.highContrast()"
-                    [attr.aria-label]="i18n.t('highContrast')"
-                    [attr.aria-pressed]="a11y.highContrast()">
-              ◑
-            </button>
-            <button class="toggle-btn" (click)="a11y.toggleLargeText()"
-                    [class.on]="a11y.largeText()"
-                    [attr.aria-label]="i18n.t('largeText')"
-                    [attr.aria-pressed]="a11y.largeText()">
-              A+
-            </button>
+            <button class="toggle-btn lang" [class.on]="i18n.locale() === 'en'" (click)="i18n.setLocale('en')">EN</button>
+            <button class="toggle-btn lang" [class.on]="i18n.locale() === 'fr'" (click)="i18n.setLocale('fr')">FR</button>
+            <button class="toggle-btn" (click)="a11y.toggleTts()" [class.on]="a11y.tts()" [attr.aria-label]="i18n.t('ttsLabel')">🔊</button>
+            <button class="toggle-btn" (click)="a11y.toggleHighContrast()" [class.on]="a11y.highContrast()" [attr.aria-label]="i18n.t('highContrast')">◑</button>
+            <button class="toggle-btn" (click)="a11y.decreaseFontSize()" aria-label="Decrease text">A−</button>
+            <button class="toggle-btn" (click)="a11y.increaseFontSize()" aria-label="Increase text">A+</button>
           </div>
         </div>
-        <p class="subtitle">Patient Accessibility Intake</p>
       </header>
       <main class="content">
         <router-outlet />
@@ -209,32 +236,48 @@ export class A11yModeService {
   styles: [
     `
       .patient-layout {
+        --p-bg: #f5f7fa;
+        --p-fg: #1a1a1a;
+        --p-card-bg: white;
+        --p-accent: #0d47a1;
+        --p-accent-fg: white;
+        --p-muted: #555;
+        --p-border: #bbb;
+        --p-input-bg: white;
+        --p-green: #2e7d32;
+        --p-red: #c62828;
+        --p-light-accent: #e3f2fd;
         min-height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
-        background: #f5f7fa;
+        background: var(--p-bg);
+        color: var(--p-fg);
         transition: background 0.2s, color 0.2s;
       }
-      /* ─── High contrast mode ─── */
       .patient-layout.hc {
-        background: #fff;
-        color: #000;
+        --p-bg: #000;
+        --p-fg: #fff;
+        --p-card-bg: #111;
+        --p-accent: #ffd600;
+        --p-accent-fg: #000;
+        --p-muted: #ccc;
+        --p-border: #fff;
+        --p-input-bg: #222;
+        --p-green: #00e676;
+        --p-red: #ff5252;
+        --p-light-accent: #222;
       }
-      .patient-layout.hc .header { background: #000; }
-      .patient-layout.hc .subtitle { opacity: 1; }
-      /* ─── Large text mode ─── */
-      .patient-layout.lt { font-size: 1.25rem; }
-      .patient-layout.lt .header h1 { font-size: 1.6rem; }
-      .patient-layout.lt .subtitle { font-size: 1.05rem; }
-
       .header {
         width: 100%;
         max-width: 480px;
         padding: 0.75rem 1rem;
         background: #0d47a1;
         color: white;
-        text-align: center;
+      }
+      .patient-layout.hc .header {
+        background: #111;
+        border-bottom: 2px solid var(--p-accent);
       }
       .header-top {
         display: flex;
@@ -246,26 +289,33 @@ export class A11yModeService {
         font-size: 1.3rem;
         letter-spacing: 0.5px;
       }
-      .subtitle {
-        margin: 0.15rem 0 0;
-        opacity: 0.9;
-        font-size: 0.85rem;
+      .a11y-toggles {
+        display: flex;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
-      .a11y-toggles { display: flex; gap: 0.35rem; }
       .toggle-btn {
-        width: 36px; height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 8px;
-        border: 2px solid rgba(255,255,255,0.5);
+        border: 2px solid rgba(255, 255, 255, 0.5);
         background: transparent;
         color: white;
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         font-weight: 700;
         cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: background 0.15s;
       }
+      .toggle-btn.lang {
+        font-size: 0.7rem;
+        width: 30px;
+      }
       .toggle-btn.on {
-        background: rgba(255,255,255,0.25);
+        background: rgba(255, 255, 255, 0.25);
         border-color: white;
       }
       .content {

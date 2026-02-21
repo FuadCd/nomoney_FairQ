@@ -6,16 +6,6 @@ import { I18nService, IntakeAccessibilityProfile } from '../../features/patient/
   standalone: true,
   template: `
     <div class="step">
-      <div class="lang-selector">
-        <span>{{ i18n.t('languageLabel') }}:</span>
-        <button class="lang-btn" [class.active]="i18n.locale() === 'en'" (click)="setLang('en')">
-          English
-        </button>
-        <button class="lang-btn" [class.active]="i18n.locale() === 'fr'" (click)="setLang('fr')">
-          Français
-        </button>
-      </div>
-
       <p class="intro">{{ i18n.t('accessibilityIntro') }}</p>
       <p class="q-count">{{ i18n.t('questionXof6', { n: (currentQ() + 1).toString() }) }}</p>
 
@@ -38,49 +28,23 @@ import { I18nService, IntakeAccessibilityProfile } from '../../features/patient/
         flex-direction: column;
         gap: 1rem;
       }
-      .lang-selector {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        justify-content: center;
-        padding: 0.5rem 0;
-      }
-      .lang-selector span {
-        font-size: 0.9rem;
-        color: #555;
-      }
-      .lang-btn {
-        padding: 0.4rem 1rem;
-        border: 2px solid #0d47a1;
-        border-radius: 8px;
-        background: white;
-        color: #0d47a1;
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 0.9rem;
-        min-height: 48px;
-      }
-      .lang-btn.active {
-        background: #0d47a1;
-        color: white;
-      }
       .intro {
         text-align: center;
-        color: #555;
+        color: var(--p-muted, #555);
         font-size: 1rem;
         margin: 0;
       }
       .q-count {
         text-align: center;
         font-weight: 600;
-        color: #0d47a1;
+        color: var(--p-accent, #0d47a1);
         margin: 0;
         font-size: 0.9rem;
       }
       .question {
         font-size: 1.3rem;
         font-weight: 600;
-        color: #1a1a1a;
+        color: var(--p-fg, #1a1a1a);
         text-align: center;
         margin: 0.5rem 0;
         line-height: 1.4;
@@ -108,11 +72,11 @@ import { I18nService, IntakeAccessibilityProfile } from '../../features/patient/
         opacity: 0.9;
       }
       .yes {
-        background: #2e7d32;
+        background: var(--p-green, #2e7d32);
         color: white;
       }
       .no {
-        background: #c62828;
+        background: var(--p-red, #c62828);
         color: white;
       }
     `,
@@ -133,10 +97,6 @@ export class StepAccessibilityComponent {
   ];
 
   private answers: Partial<Record<keyof IntakeAccessibilityProfile, boolean>> = {};
-
-  setLang(lang: string): void {
-    this.i18n.setLocale(lang);
-  }
 
   answer(value: boolean): void {
     const q = this.questions[this.currentQ()];

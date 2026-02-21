@@ -47,7 +47,7 @@ import { I18nService } from '../../features/patient/patient.component';
       .question {
         font-size: 1.25rem;
         font-weight: 600;
-        color: #1a1a1a;
+        color: var(--p-fg, #1a1a1a);
         margin: 0;
       }
       .severity-q {
@@ -58,18 +58,20 @@ import { I18nService } from '../../features/patient/patient.component';
         min-height: 80px;
         padding: 1rem;
         font-size: 1.1rem;
-        border: 2px solid #bbb;
+        border: 2px solid var(--p-border, #bbb);
         border-radius: 12px;
         resize: vertical;
         font-family: inherit;
         box-sizing: border-box;
+        background: var(--p-input-bg, white);
+        color: var(--p-fg, #1a1a1a);
       }
       .complaint-input:focus {
-        border-color: #0d47a1;
+        border-color: var(--p-accent, #0d47a1);
         outline: none;
       }
       .error {
-        color: #c62828;
+        color: var(--p-red, #c62828);
         font-weight: 500;
         margin: 0;
         font-size: 0.95rem;
@@ -85,10 +87,10 @@ import { I18nService } from '../../features/patient/patient.component';
         padding: 0.75rem 1rem;
         font-size: 1.1rem;
         font-weight: 600;
-        border: 2px solid #0d47a1;
+        border: 2px solid var(--p-accent, #0d47a1);
         border-radius: 12px;
-        background: white;
-        color: #0d47a1;
+        background: var(--p-card-bg, white);
+        color: var(--p-accent, #0d47a1);
         cursor: pointer;
         transition:
           background 0.15s,
@@ -96,8 +98,8 @@ import { I18nService } from '../../features/patient/patient.component';
       }
       .severity-btn:active,
       .severity-btn:hover {
-        background: #0d47a1;
-        color: white;
+        background: var(--p-accent, #0d47a1);
+        color: var(--p-accent-fg, white);
       }
       .emoji {
         font-size: 1.8rem;
