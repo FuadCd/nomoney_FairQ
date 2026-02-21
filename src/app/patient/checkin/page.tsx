@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { Check, X, Loader2, ArrowLeft } from 'lucide-react'
 import { api } from '../../../lib/api/api'
 import { usePatientStore } from '../../../lib/store/patientStore'
+import { cn } from '@/lib/utils/cn'
 
 export default function PatientCheckInPage() {
   const router = useRouter()
@@ -42,7 +45,6 @@ export default function PatientCheckInPage() {
     
     setLoading(true)
     try {
-      // Submit check-in to backend
       await api.submitCheckIn({
         passportId: patient.passportId,
         discomfortLevel,
@@ -51,7 +53,6 @@ export default function PatientCheckInPage() {
         timestamp: new Date().toISOString(),
       })
       
-      // Recompute burden with new check-in
       const burdenResponse = await api.computeBurden({
         facilityId: patient.assignedHospitalKey,
         profile: patient.accessibilityProfile,
@@ -68,7 +69,6 @@ export default function PatientCheckInPage() {
         ],
       })
       
-      // Update patient
       updatePatient(patient.id, {
         checkIns: [
           ...patient.checkIns,
@@ -99,129 +99,173 @@ export default function PatientCheckInPage() {
   
   if (!patient) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-gray-700 mb-4">No patient found</p>
-          <button
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <p className="text-xl text-foreground mb-4">No patient found</p>
+          <motion.button
             onClick={() => router.push('/patient/intake')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
           >
             Start Intake
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
     )
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <h1 className="text-3xl font-bold text-white mb-2">20-Minute Check-In</h1>
-            <p className="text-blue-100">Patient: {patient.passportId}</p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
+        >
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6">
+            <h1 className="text-3xl font-bold text-primary-foreground mb-2">20-Minute Check-In</h1>
+            <p className="text-primary-foreground/80">Patient: {patient.passportId}</p>
           </div>
           
           <div className="p-8 space-y-6">
             {/* Discomfort Level */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-3">
+              <label className="block text-sm font-semibold text-foreground mb-3">
                 Discomfort Level (1-5)
               </label>
               <div className="grid grid-cols-5 gap-2">
                 {[1, 2, 3, 4, 5].map((level) => (
-                  <button
+                  <motion.button
                     key={level}
                     type="button"
                     onClick={() => setDiscomfortLevel(level)}
-                    className={`py-4 px-3 rounded-xl font-bold text-lg transition-all ${
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(
+                      "py-4 px-3 rounded-lg font-bold text-lg transition-all",
                       discomfortLevel === level
                         ? level <= 2
-                          ? 'bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105'
+                          ? 'bg-green-600 text-white shadow-lg'
                           : level === 3
-                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105'
-                          : 'bg-red-600 text-white shadow-lg shadow-red-500/30 scale-105'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                          ? 'bg-amber-500 text-white shadow-lg'
+                          : 'bg-red-600 text-white shadow-lg'
+                        : 'bg-muted text-muted-foreground hover:bg-accent'
+                    )}
                   >
                     {level}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
             
             {/* Intends to Stay */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-3">
+              <label className="block text-sm font-semibold text-foreground mb-3">
                 Planning to Stay?
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setIntendsToStay(true)}
-                  className={`py-4 px-4 rounded-xl font-semibold transition-all ${
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "py-4 px-4 rounded-lg font-semibold transition-all flex items-center justify-center",
                     intendsToStay
-                      ? 'bg-green-600 text-white shadow-lg shadow-green-500/30'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                      ? 'bg-green-600 text-white shadow-lg'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  )}
                 >
-                  ✓ Yes, staying
-                </button>
-                <button
+                  <Check className="h-4 w-4 mr-2" />
+                  Yes, staying
+                </motion.button>
+                <motion.button
                   type="button"
                   onClick={() => setIntendsToStay(false)}
-                  className={`py-4 px-4 rounded-xl font-semibold transition-all ${
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "py-4 px-4 rounded-lg font-semibold transition-all flex items-center justify-center",
                     !intendsToStay
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                      ? 'bg-red-600 text-white shadow-lg'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  )}
                 >
-                  ⚠ Thinking of leaving
-                </button>
+                  <X className="h-4 w-4 mr-2" />
+                  Thinking of leaving
+                </motion.button>
               </div>
             </div>
             
             {/* Assistance Requested */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-3">
+              <label className="block text-sm font-semibold text-foreground mb-3">
                 Assistance Requested (optional)
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {assistanceOptions.map((option) => (
-                  <button
+                  <motion.button
                     key={option.value}
                     type="button"
                     onClick={() => handleAssistanceToggle(option.value)}
-                    className={`py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center space-x-2 ${
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={cn(
+                      "py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center space-x-2",
                       assistanceRequested.includes(option.value)
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted text-muted-foreground hover:bg-accent'
+                    )}
                   >
                     <span>{option.icon}</span>
                     <span>{option.label}</span>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
             
             <div className="flex space-x-4 pt-4">
-              <button
+              <motion.button
                 onClick={() => router.push('/patient/waiting')}
-                className="flex-1 bg-gray-100 text-gray-800 py-3 px-4 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex-1 bg-muted text-muted-foreground py-3 px-4 rounded-lg font-semibold hover:bg-accent transition-all flex items-center justify-center"
               >
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Cancel
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                className={cn(
+                  "flex-1 bg-primary text-primary-foreground py-3 px-4 rounded-lg font-semibold",
+                  "hover:bg-primary/90 transition-all shadow-lg shadow-primary/20",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "flex items-center justify-center"
+                )}
               >
-                {loading ? 'Submitting...' : 'Submit Check-In ✓'}
-              </button>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    Submit Check-In
+                    <Check className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

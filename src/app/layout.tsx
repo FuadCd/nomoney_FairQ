@@ -1,5 +1,6 @@
 import './globals.css'
 import Navigation from '../components/Navigation'
+import { ThemeProvider } from '../components/theme-provider'
 
 export const metadata = {
   title: 'AccessER - Accessibility-Adjusted Emergency Room Burden Platform',
@@ -12,10 +13,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <Navigation />
-        {children}
+        <ThemeProvider defaultTheme="system" storageKey="accesser-theme">
+          <Navigation />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

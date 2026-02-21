@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, Check, Loader2, AlertCircle } from 'lucide-react'
 import type { PatientProfile } from '../../types'
 import { api } from '../../lib/api/api'
 import { usePatientStore } from '../../lib/store/patientStore'
+import { cn } from '@/lib/utils/cn'
 
 interface CheckInModalProps {
   patient: PatientProfile
@@ -35,7 +38,6 @@ export default function CheckInModal({ patient, onClose }: CheckInModalProps) {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      // Submit check-in
       await api.submitCheckIn({
         passportId: patient.passportId,
         discomfortLevel,
@@ -44,7 +46,6 @@ export default function CheckInModal({ patient, onClose }: CheckInModalProps) {
         timestamp: new Date().toISOString(),
       })
       
-      // Recompute burden with new check-in
       const burdenResponse = await api.computeBurden({
         facilityId: patient.assignedHospitalKey,
         profile: patient.accessibilityProfile,
@@ -61,7 +62,6 @@ export default function CheckInModal({ patient, onClose }: CheckInModalProps) {
         ],
       })
       
-      // Update patient
       updatePatient(patient.id, {
         checkIns: [
           ...patient.checkIns,
@@ -91,132 +91,179 @@ export default function CheckInModal({ patient, onClose }: CheckInModalProps) {
   }
   
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 rounded-t-2xl">
-          <h2 className="text-2xl font-bold text-white mb-1">
-            20-Minute Check-In
-          </h2>
-          <p className="text-blue-100 text-sm">
-            Patient: <span className="font-mono font-semibold">{patient.passportId}</span>
-          </p>
-        </div>
-        
-        <div className="p-6 space-y-6">
-          {/* Discomfort Level */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Discomfort Level (1-5)
-            </label>
-            <div className="grid grid-cols-5 gap-2">
-              {[1, 2, 3, 4, 5].map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => setDiscomfortLevel(level)}
-                  className={`py-4 px-3 rounded-xl font-bold text-lg transition-all ${
-                    discomfortLevel === level
-                      ? level <= 2
-                        ? 'bg-green-600 text-white shadow-lg shadow-green-500/30 scale-105'
-                        : level === 3
-                        ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105'
-                        : 'bg-red-600 text-white shadow-lg shadow-red-500/30 scale-105'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {level}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              {discomfortLevel <= 2 ? 'Low' : discomfortLevel === 3 ? 'Moderate' : 'High'} discomfort
-            </p>
-          </div>
-          
-          {/* Intends to Stay */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Planning to Stay?
-            </label>
-            <div className="grid grid-cols-2 gap-3">
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-card border border-border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-5 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-primary-foreground mb-1">
+                  20-Minute Check-In
+                </h2>
+                <p className="text-primary-foreground/80 text-sm">
+                  Patient: <span className="font-mono font-semibold">{patient.passportId}</span>
+                </p>
+              </div>
               <button
-                type="button"
-                onClick={() => setIntendsToStay(true)}
-                className={`py-4 px-4 rounded-xl font-semibold transition-all ${
-                  intendsToStay
-                    ? 'bg-green-600 text-white shadow-lg shadow-green-500/30'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                onClick={onClose}
+                className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
               >
-                ✓ Yes, staying
-              </button>
-              <button
-                type="button"
-                onClick={() => setIntendsToStay(false)}
-                className={`py-4 px-4 rounded-xl font-semibold transition-all ${
-                  !intendsToStay
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                ⚠ Thinking of leaving
+                <X className="h-5 w-5" />
               </button>
             </div>
           </div>
           
-          {/* Assistance Requested */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Assistance Requested (optional)
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {assistanceOptions.map((option) => (
-                <button
-                  key={option.value}
+          <div className="p-6 space-y-6">
+            {/* Discomfort Level */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-3">
+                Discomfort Level (1-5)
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <motion.button
+                    key={level}
+                    type="button"
+                    onClick={() => setDiscomfortLevel(level)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(
+                      "py-4 px-3 rounded-lg font-bold text-lg transition-all",
+                      discomfortLevel === level
+                        ? level <= 2
+                          ? 'bg-green-600 text-white shadow-lg'
+                          : level === 3
+                          ? 'bg-amber-500 text-white shadow-lg'
+                          : 'bg-red-600 text-white shadow-lg'
+                        : 'bg-muted text-muted-foreground hover:bg-accent'
+                    )}
+                  >
+                    {level}
+                  </motion.button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                {discomfortLevel <= 2 ? 'Low' : discomfortLevel === 3 ? 'Moderate' : 'High'} discomfort
+              </p>
+            </div>
+            
+            {/* Intends to Stay */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-3">
+                Planning to Stay?
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <motion.button
                   type="button"
-                  onClick={() => handleAssistanceToggle(option.value)}
-                  className={`py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center space-x-2 ${
-                    assistanceRequested.includes(option.value)
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={() => setIntendsToStay(true)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "py-4 px-4 rounded-lg font-semibold transition-all flex items-center justify-center",
+                    intendsToStay
+                      ? 'bg-green-600 text-white shadow-lg'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  )}
                 >
-                  <span>{option.icon}</span>
-                  <span>{option.label}</span>
-                </button>
-              ))}
+                  <Check className="h-4 w-4 mr-2" />
+                  Yes, staying
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={() => setIntendsToStay(false)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "py-4 px-4 rounded-lg font-semibold transition-all flex items-center justify-center",
+                    !intendsToStay
+                      ? 'bg-red-600 text-white shadow-lg'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Thinking of leaving
+                </motion.button>
+              </div>
+            </div>
+            
+            {/* Assistance Requested */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-3">
+                Assistance Requested (optional)
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {assistanceOptions.map((option) => (
+                  <motion.button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleAssistanceToggle(option.value)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={cn(
+                      "py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center space-x-2",
+                      assistanceRequested.includes(option.value)
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted text-muted-foreground hover:bg-accent'
+                    )}
+                  >
+                    <span>{option.icon}</span>
+                    <span>{option.label}</span>
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200 flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-xl font-semibold hover:bg-gray-300 transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting...
-              </span>
-            ) : (
-              'Submit Check-In ✓'
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+          
+          {/* Footer */}
+          <div className="bg-muted/50 px-6 py-4 rounded-b-2xl border-t border-border flex space-x-3">
+            <motion.button
+              onClick={onClose}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 bg-muted text-muted-foreground py-3 px-4 rounded-lg font-semibold hover:bg-accent transition-all"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              onClick={handleSubmit}
+              disabled={loading}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              className={cn(
+                "flex-1 bg-primary text-primary-foreground py-3 px-4 rounded-lg font-semibold",
+                "hover:bg-primary/90 transition-all shadow-lg shadow-primary/20",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "flex items-center justify-center"
+              )}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  Submit Check-In
+                  <Check className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
