@@ -1,4 +1,7 @@
 import { Component, signal, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
 import { I18nService, IntakeAccessibilityProfile } from '../patient.component';
 import { StepComplaintComponent } from '../../../components/patient/step-complaint.component';
 import { StepAccessibilityComponent } from '../../../components/patient/step-accessibility.component';
@@ -10,20 +13,21 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
   imports: [StepComplaintComponent, StepAccessibilityComponent, StepConfirmComponent],
   template: `
     <div class="intake">
+      <button type="button" class="back-link back-btn" (click)="back()">&larr; Back</button>
       <div
         class="progress"
         role="progressbar"
-        [attr.aria-valuenow]="step()"
+        [attr.aria-valuenow]="stepParam()"
         aria-valuemin="1"
         aria-valuemax="3"
       >
-        {{ i18n.t('stepXof3', { step: step().toString() }) }}
+        {{ i18n.t('stepXof3', { step: stepParam().toString() }) }}
       </div>
       <div class="progress-bar">
-        <div class="progress-fill" [style.width.%]="(step() / 3) * 100"></div>
+        <div class="progress-fill" [style.width.%]="(stepParam() / 3) * 100"></div>
       </div>
 
-      @switch (step()) {
+      @switch (stepParam()) {
         @case (1) {
           <div class="fade-in">
             <app-step-complaint [useEmojiSeverity]="false" (completed)="onComplaintDone($event)" />
@@ -51,6 +55,23 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
     `
       .intake {
         padding: 0.5rem 0;
+      }
+      .back-link {
+        display: inline-block;
+        margin-bottom: 1rem;
+        color: var(--p-accent, #0d47a1);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
+      .back-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        cursor: pointer;
       }
       .progress {
         text-align: center;
@@ -90,7 +111,13 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
 })
 export class IntakeComponent {
   readonly i18n = inject(I18nService);
-  readonly step = signal(1);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  readonly stepParam = toSignal(
+    this.route.paramMap.pipe(map((p) => Math.min(3, Math.max(1, +(p.get('step') ?? 1) || 1)))),
+    { initialValue: 1 }
+  );
   readonly complaint = signal('');
   readonly severity = signal(1);
   readonly accessibilityProfile = signal<IntakeAccessibilityProfile>({
@@ -112,13 +139,23 @@ export class IntakeComponent {
   onComplaintDone(data: { complaint: string; severity: number }): void {
     this.complaint.set(data.complaint);
     this.severity.set(data.severity);
-    this.step.set(2);
+    this.router.navigate(['/patient/intake/2']);
     window.scrollTo(0, 0);
   }
 
   onAccessibilityDone(profile: IntakeAccessibilityProfile): void {
     this.accessibilityProfile.set(profile);
-    this.step.set(3);
+    this.router.navigate(['/patient/intake/3']);
     window.scrollTo(0, 0);
+  }
+
+  /** Back follows session sequence: step 1 → login; step 2 → step 1; step 3 → step 2. */
+  back(): void {
+    const step = this.stepParam();
+    if (step === 1) {
+      this.router.navigate(['/']);
+    } else {
+      this.router.navigate(['/patient/intake', step - 1]);
+    }
   }
 }

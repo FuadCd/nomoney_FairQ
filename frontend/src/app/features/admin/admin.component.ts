@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-admin',
@@ -15,9 +16,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <p class="placeholder">Admin panel with intervention sliders: wait time reduction, sensory-friendly space, interpreter availability, check-in frequency.</p>
       </main>
       <nav class="nav">
-        <a routerLink="/patient">Patient</a>
         <a routerLink="/staff">Staff</a>
         <a routerLink="/admin" routerLinkActive="active">Admin</a>
+        <button type="button" class="nav-signout" (click)="signOut()">Sign out</button>
       </nav>
     </div>
   `,
@@ -31,6 +32,16 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     .nav { display: flex; gap: 1rem; padding: 1rem; background: #f5f5f5; }
     .nav a { color: #6a1b9a; text-decoration: none; }
     .nav a.active { font-weight: 600; }
+    .nav-signout { margin-left: auto; padding: 0.35rem 0.6rem; background: transparent; border: 1px solid #6a1b9a; color: #6a1b9a; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .nav-signout:hover { background: #6a1b9a; color: white; }
   `],
 })
-export class AdminComponent {}
+export class AdminComponent {
+  private auth = inject(AuthService);
+  private router = inject(Router);
+
+  signOut(): void {
+    this.auth.clear();
+    this.router.navigate(['/']);
+  }
+}

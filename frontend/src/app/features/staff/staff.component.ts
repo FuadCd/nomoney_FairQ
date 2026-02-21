@@ -1,7 +1,8 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { PatientStoreService } from '../../core/patient-store.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-staff',
@@ -45,9 +46,9 @@ import { PatientStoreService } from '../../core/patient-store.service';
         </section>
       </main>
       <nav class="nav">
-        <a routerLink="/patient">Patient</a>
         <a routerLink="/staff" routerLinkActive="active">Staff</a>
         <a routerLink="/admin">Admin</a>
+        <button type="button" class="nav-signout" (click)="signOut()">Sign out</button>
       </nav>
     </div>
   `,
@@ -76,10 +77,14 @@ import { PatientStoreService } from '../../core/patient-store.service';
     .nav { display: flex; gap: 1rem; padding: 1rem; background: #f5f5f5; }
     .nav a { color: #2e7d32; text-decoration: none; }
     .nav a.active { font-weight: 600; }
+    .nav-signout { margin-left: auto; padding: 0.35rem 0.6rem; background: transparent; border: 1px solid #2e7d32; color: #2e7d32; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .nav-signout:hover { background: #2e7d32; color: white; }
   `],
 })
 export class StaffComponent implements OnInit {
   private store = inject(PatientStoreService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
 
   patients$ = this.store.getPatients();
 
@@ -95,5 +100,10 @@ export class StaffComponent implements OnInit {
 
   resetTime(): void {
     this.store.clearDemoTime();
+  }
+
+  signOut(): void {
+    this.auth.clear();
+    this.router.navigate(['/']);
   }
 }
