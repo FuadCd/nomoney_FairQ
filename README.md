@@ -9,7 +9,7 @@ AccessER is a real-time accessibility equity layer for emergency departments. It
 ## Architecture
 
 ```
-HackEd/
+nomoney/
 ├── backend/          # NestJS API (Node.js + TypeScript)
 ├── frontend/         # Angular SPA
 ├── docker-compose.yml
@@ -22,11 +22,13 @@ HackEd/
 - **Base URL**: `http://localhost:3000/api`
 - **Endpoints**:
   - `GET /health` — Health check
-  - `GET /wait-times/facilities` — ER facilities (AHS data placeholder)
+  - `GET /wait-times` — Full snapshot (hospitals, wait minutes, LWBS rates)
+  - `GET /wait-times/facilities` — ER facilities list
   - `GET /wait-times/current` — Current wait times
+  - `GET /wait-times/:hospitalKey` — Single hospital (e.g. `uofa`, `royalAlexandra`, `greyNuns`, `misericordia`, `sturgeon`)
   - `GET /accessibility-profiles/templates` — Profile templates
   - `POST /accessibility-profiles/compute` — Compute vulnerability multiplier
-  - `POST /burden-modeling/compute` — Compute burden curves
+  - `POST /burden-modeling/compute` — Compute burden curves, burden score, alert status
   - `POST /check-in` — Submit 20-min check-in
 
 ### Frontend (Angular)
@@ -82,6 +84,63 @@ docker-compose up --build
 
 - **Backend**: Uses `PORT` (default 3000), `FRONTEND_URL` (default http://localhost:4200) for CORS
 - **Frontend**: `src/environments/environment.ts` — `apiUrl` for development; replaced in production
+
+---
+
+## Data Sources & Backend Logic
+
+### Alberta Wait Times Snapshot
+
+`backend/src/wait-times/alberta-waittimes.snapshot.ts` contains snapshot data for five Alberta hospitals:
+
+| Hospital | City | Wait Minutes | LWBS Rate |
+|----------|------|--------------|-----------|
+| University of Alberta Hospital | Edmonton | 316 | 15.1% |
+| Royal Alexandra Hospital | Edmonton | 291 | 19.9% |
+| Grey Nuns Community Hospital | Edmonton | 159 | 13.4% |
+| Misericordia Community Hospital | Edmonton | 367 | 17.2% |
+| Sturgeon Community Hospital | St. Albert | 341 | 9.3% |
+
+- **Wait times**: Alberta Health Services (AHS)
+- **LWBS rates**: Health Quality Council of Alberta (HQCA), Apr–Jun 2025
+
+Update `snapshotTakenAt` and `waitMinutes` / `lwbsRate` before demos as data changes.
+
+### Model Constants
+
+`backend/src/burden-modeling/modelConstants.ts`:
+
+- **MEDIAN_TOTAL_STAY_MINUTES** = 238 (CIHI NACRS Alberta 2024–25)
+- **MEDIAN_TO_PHYSICIAN_MINUTES** = 90
+- **MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES** = 87 — McMaster median time-to-physician among triage-matched controls; used as reference for “beyond median physician access” and gradual escalation. Source: published ED LWBS study.
+
+### Burden Calculation
+
+1. **Base waiting impact (CIHI)** — Time-based burden from `computeBaseWaitingImpact(minutesWaited)`:
+   - Normalized against median total stay (238 min → ~60 burden)
+   - +8 acceleration after 90 min (median time to physician)
+   - Capped at 75
+
+2. **Post-87 min gradual escalation (McMaster)** — `applyPostMedianPhysicianDelayAdjustment(burden, minutesWaited)`:
+   - +0 to +10 bump when `minutesWaited` exceeds 87 min
+   - Capped at 10; then final burden clamped 0–100
+
+3. **LWBS integration (HQCA)** — Environment-level disengagement:
+   - `computeLeaveSignalWeight(hospitalKey)` normalizes LWBS around 5% baseline
+   - High-LWBS hospitals scale disengagement sensitivity up
+   - If `intendsToStay === false` in check-in: `burden += 15 * leaveSignalWeight`
+
+4. **Alert status** — `RED` if burden > 75 or planning to leave; `AMBER` if burden > 50; else `GREEN`
+
+5. **Amber check-in suggestion** — `suggestAmberCheckIn: true` when `minutesWaited > 87` and `burden >= 55` (extended wait beyond typical physician access → suggest staff touchpoint)
+
+6. **Burden API response** — `burden`, `alertStatus`, `suggestAmberCheckIn`, `burdenCurve`, `equityGapScore`, `baselineCurve`
+
+### Frontend Lib (source of truth for display)
+
+- `frontend/src/lib/model/modelConstants.ts` — CIHI + McMaster constants
+- `frontend/src/lib/data/albertaERs.ts` — Alberta hospital list (AHS, HQCA)
+- `frontend/src/lib/model/burden.ts` — `shouldSuggestAmberCheckIn(minutesWaited, burden)`
 
 ---
 

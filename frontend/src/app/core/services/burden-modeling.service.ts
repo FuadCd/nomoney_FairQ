@@ -9,9 +9,19 @@ export interface BurdenCurvePoint {
   returnVisitRisk: number;
 }
 
+export interface VulnerabilityProfile {
+  chronicPain?: boolean;
+  mobility?: boolean;
+  cognitive?: boolean;
+  sensory?: boolean;
+  language?: boolean;
+  alone?: boolean;
+}
+
 export interface ComputeBurdenInput {
   facilityId: string;
-  vulnerabilityMultiplier: number;
+  vulnerabilityMultiplier?: number;
+  profile?: VulnerabilityProfile;
   estimatedCtasLevel: number;
   waitTimeMinutes: number;
   checkInResponses?: {
@@ -29,6 +39,9 @@ export class BurdenModelingService {
   computeBurden(input: ComputeBurdenInput): Observable<{
     burdenCurve: BurdenCurvePoint[];
     equityGapScore: number;
+    burden: number;
+    alertStatus: string;
+    suggestAmberCheckIn: boolean;
     baselineCurve: unknown[];
     confidenceInterval: number;
   }> {

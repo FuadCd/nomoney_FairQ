@@ -4,7 +4,9 @@ import { WaitTimesService } from '../wait-times/wait-times.service';
 import {
   MEDIAN_TOTAL_STAY_MINUTES,
   MEDIAN_TO_PHYSICIAN_MINUTES,
+  MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES,
 } from './modelConstants';
+import { VULNERABILITY_WEIGHTS } from './vulnerabilityWeights';
 
 export interface BurdenCurvePoint {
   timeMinutes: number;
@@ -23,6 +25,10 @@ export class BurdenModelingService {
     const points: BurdenCurvePoint[] = [];
     const maxTime = Math.min(180, dto.waitTimeMinutes + 60); // Up to 3 hours
 
+    const vulnerabilityMultiplier = dto.profile
+      ? this.computeVulnerabilityMultiplier(dto.profile)
+      : (dto.vulnerabilityMultiplier ?? 1);
+
     const leaveSignalWeight =
       this.waitTimesService.computeLeaveSignalWeight(dto.facilityId);
 
@@ -32,7 +38,7 @@ export class BurdenModelingService {
 
     for (let t = 0; t <= maxTime; t += 5) {
       const baselineHazard = this.baselineHazard(t, dto.estimatedCtasLevel);
-      const risk = baselineHazard * dto.vulnerabilityMultiplier;
+      const risk = baselineHazard * vulnerabilityMultiplier;
 
       // Scale LWBS curve by environment-level disengagement context (HQCA)
       const lwbsRisk = risk * leaveSignalWeight;
@@ -45,7 +51,7 @@ export class BurdenModelingService {
       });
     }
 
-    let burden = this.computeBurdenScore(points, dto);
+    let burden = this.computeBurdenScore(points, vulnerabilityMultiplier);
 
     // CIHI-anchored time-based burden (controls the time curve)
     burden += this.computeBaseWaitingImpact(dto.waitTimeMinutes);
@@ -55,9 +61,24 @@ export class BurdenModelingService {
       burden += 15 * leaveSignalWeight;
     }
 
+    // Post-87 min gradual escalation (McMaster reference)
+    burden = this.applyPostMedianPhysicianDelayAdjustment(
+      burden,
+      dto.waitTimeMinutes,
+    );
+
+    // Vulnerability scaling (StatsCan-informed weights)
+    burden = burden * (1 + vulnerabilityMultiplier);
+    burden = Math.max(0, Math.min(100, burden));
+
+    const isPastMedianPhysicianAccess =
+      dto.waitTimeMinutes > MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES;
+    const suggestAmberCheckIn =
+      isPastMedianPhysicianAccess && burden >= 55;
+
     const equityGapScore = this.computeEquityGap(
       points,
-      dto.vulnerabilityMultiplier,
+      vulnerabilityMultiplier,
     );
     const alertStatus =
       burden > 75 || planningToLeave ? 'RED' : burden > 50 ? 'AMBER' : 'GREEN';
@@ -67,13 +88,27 @@ export class BurdenModelingService {
       equityGapScore,
       burden,
       alertStatus,
+      suggestAmberCheckIn,
       baselineCurve: points.map((p) => ({
         timeMinutes: p.timeMinutes,
-        distressProbability: p.distressProbability / dto.vulnerabilityMultiplier,
-        lwbsProbability: p.lwbsProbability / dto.vulnerabilityMultiplier,
+        distressProbability: p.distressProbability / vulnerabilityMultiplier,
+        lwbsProbability: p.lwbsProbability / vulnerabilityMultiplier,
       })),
       confidenceInterval: 0.95,
     };
+  }
+
+  /** +0 to +10 gradual bump after 87 min (McMaster triage-matched control median) */
+  private applyPostMedianPhysicianDelayAdjustment(
+    burden: number,
+    minutesWaited: number,
+  ): number {
+    if (minutesWaited <= MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES)
+      return burden;
+    const over =
+      minutesWaited - MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES;
+    const bump = Math.min(over * 0.1, 10);
+    return burden + bump;
   }
 
   /** CIHI-anchored: 0 min → 0, 238 min → ~60, acceleration after 90 min */
@@ -88,7 +123,7 @@ export class BurdenModelingService {
 
   private computeBurdenScore(
     points: BurdenCurvePoint[],
-    dto: ComputeBurdenDto,
+    vulnerabilityMultiplier: number,
   ): number {
     const lastPoint = points[points.length - 1];
     if (!lastPoint) return 0;
@@ -96,7 +131,27 @@ export class BurdenModelingService {
       lastPoint.distressProbability * 30 +
       lastPoint.lwbsProbability * 40 +
       lastPoint.returnVisitRisk * 20;
-    return Math.min(100, base * dto.vulnerabilityMultiplier);
+    return Math.min(100, base * vulnerabilityMultiplier);
+  }
+
+  /** Returns 0 → ~0.95 from profile flags (StatsCan-informed weights) */
+  private computeVulnerabilityMultiplier(profile: {
+    chronicPain?: boolean;
+    mobility?: boolean;
+    cognitive?: boolean;
+    sensory?: boolean;
+    language?: boolean;
+    alone?: boolean;
+  }): number {
+    let totalWeight = 0;
+    for (const key of Object.keys(
+      VULNERABILITY_WEIGHTS,
+    ) as (keyof typeof VULNERABILITY_WEIGHTS)[]) {
+      if (profile[key]) {
+        totalWeight += VULNERABILITY_WEIGHTS[key];
+      }
+    }
+    return totalWeight;
   }
 
   private baselineHazard(timeMinutes: number, ctasLevel: number): number {

@@ -13,3 +13,10 @@ export const MEDIAN_TOTAL_STAY_MINUTES = 238;
 
 // Median time to physician (minutes)
 export const MEDIAN_TO_PHYSICIAN_MINUTES = 90;
+
+/**
+ * McMaster median time-to-physician among triage-matched controls.
+ * Used as reference for "beyond median physician access" (gradual escalation).
+ * Source: published ED LWBS study.
+ */
+export const MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES = 87;
