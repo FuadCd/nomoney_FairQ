@@ -1,6 +1,12 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AsyncPipe } from '@angular/common';
+import { Router } from '@angular/router';
+import { AsyncPipe, DecimalPipe } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatChipModule } from '@angular/material/chip';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../core/auth/auth.service';
 import { AdminSummaryService, type AdminSummary, type EquityFlagKey } from '../../core/services/admin-summary.service';
 import {
@@ -8,6 +14,8 @@ import {
   MEDIAN_TO_PHYSICIAN_MINUTES,
   MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES,
 } from '../../../lib/model/modelConstants';
+import { DashboardLayoutComponent, NavItem } from '../../components/layout/dashboard-layout.component';
+import { SkeletonLoaderComponent } from '../../components/skeleton-loader/skeleton-loader.component';
 
 const EQUITY_LABELS: Record<EquityFlagKey, string> = {
   mobility: 'Mobility',
@@ -21,148 +29,528 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, AsyncPipe],
+  imports: [
+    AsyncPipe,
+    DecimalPipe,
+    MatCardModule,
+    MatChipModule,
+    MatIconModule,
+    MatTableModule,
+    MatProgressBarModule,
+    MatTooltipModule,
+    DashboardLayoutComponent,
+    SkeletonLoaderComponent,
+  ],
   template: `
-    <div class="admin-layout">
-      <header class="header">
-        <h1>AccessER Admin Dashboard</h1>
-        <p class="subtitle">Read-only — Model health & equity overview</p>
-      </header>
+    <app-dashboard-layout
+      [navItems]="navItems"
+      [breadcrumbs]="['Dashboard', 'Admin']"
+      [notificationCount]="0"
+      (onSignOut)="signOut()"
+    >
+      <div class="admin-dashboard max-width-container">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="header-content">
+            <div>
+              <h1>Admin Dashboard</h1>
+              <p class="subtitle">Read-only — Model health & equity overview</p>
+            </div>
+            <mat-chip class="read-only-chip" color="accent">
+              <mat-icon matChipAvatar>lock</mat-icon>
+              Read-Only Mode
+            </mat-chip>
+          </div>
+        </div>
 
-      <main class="content">
         @if (summary$ | async; as s) {
-          <!-- Card 1: Model Health -->
-          <section class="card" aria-label="Model health">
-            <h2>Model Health</h2>
-            <div class="model-health-grid">
-              <div class="alert-distribution">
-                <h3>Alert distribution</h3>
-                <div class="alert-bars">
-                  <div class="bar-row">
-                    <span class="bar-label">Green</span>
-                    <div class="bar-track"><div class="bar-fill green" [style.width.%]="s.alertDistribution.greenPercent"></div></div>
-                    <span class="bar-value">{{ s.alertDistribution.greenPercent }}%</span>
-                  </div>
-                  <div class="bar-row">
-                    <span class="bar-label">Amber</span>
-                    <div class="bar-track"><div class="bar-fill amber" [style.width.%]="s.alertDistribution.amberPercent"></div></div>
-                    <span class="bar-value">{{ s.alertDistribution.amberPercent }}%</span>
-                  </div>
-                  <div class="bar-row">
-                    <span class="bar-label">Red</span>
-                    <div class="bar-track"><div class="bar-fill red" [style.width.%]="s.alertDistribution.redPercent"></div></div>
-                    <span class="bar-value">{{ s.alertDistribution.redPercent }}%</span>
-                  </div>
-                </div>
-              </div>
-              <div class="avg-burden-cell">
-                <h3>Average burden</h3>
-                <div class="big-number" [class.normal]="s.avgBurden >= 30 && s.avgBurden <= 55" [class.strain]="s.avgBurden >= 70">
-                  {{ s.avgBurden }}
-                </div>
-                <p class="hint">30–55 normal · 70+ sustained strain</p>
-              </div>
-              <div class="missed-cell">
-                <h3>Missed check-in rate</h3>
-                <span class="badge missed-badge">{{ s.missedCheckInRate }}%</span>
-                <p class="hint">Engagement health</p>
-              </div>
-            </div>
-          </section>
-
-          <!-- Card 2: Equity Overview -->
-          <section class="card" aria-label="Equity overview">
-            <h2>Equity Overview</h2>
-            <div class="equity-grid">
-              <div class="chart-block">
-                <h3>Average burden by flag</h3>
-                <div class="flag-bars">
-                  @for (key of equityKeys; track key) {
-                    <div class="bar-row">
-                      <span class="bar-label">{{ EQUITY_LABELS[key] }}</span>
-                      <div class="bar-track"><div class="bar-fill neutral" [style.width.%]="s.avgBurdenByFlag[key]"></div></div>
-                      <span class="bar-value">{{ s.avgBurdenByFlag[key] }}</span>
+          <!-- Model Health Section -->
+          <mat-card class="section-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>analytics</mat-icon>
+                Model Health
+              </mat-card-title>
+              <mat-card-subtitle>Real-time metrics and alert distribution</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="model-health-grid">
+                <!-- Alert Distribution -->
+                <div class="alert-distribution">
+                  <h3>Alert Distribution</h3>
+                  <div class="alert-bars">
+                    <div class="alert-bar-item">
+                      <div class="bar-header">
+                        <span class="bar-label">Green</span>
+                        <span class="bar-value">{{ s.alertDistribution.greenPercent | number:'1.0-1' }}%</span>
+                      </div>
+                      <mat-progress-bar
+                        mode="determinate"
+                        [value]="s.alertDistribution.greenPercent"
+                        color="primary"
+                        class="progress-bar"
+                      ></mat-progress-bar>
+                      <div class="bar-count">{{ s.alertDistribution.green }} patients</div>
                     </div>
-                  }
-                </div>
-              </div>
-              <div class="chart-block">
-                <h3>% Red by flag</h3>
-                <div class="flag-bars">
-                  @for (key of equityKeys; track key) {
-                    <div class="bar-row">
-                      <span class="bar-label">{{ EQUITY_LABELS[key] }}</span>
-                      <div class="bar-track"><div class="bar-fill red" [style.width.%]="s.redRateByFlag[key]"></div></div>
-                      <span class="bar-value">{{ s.redRateByFlag[key] }}%</span>
+                    <div class="alert-bar-item">
+                      <div class="bar-header">
+                        <span class="bar-label">Amber</span>
+                        <span class="bar-value">{{ s.alertDistribution.amberPercent | number:'1.0-1' }}%</span>
+                      </div>
+                      <mat-progress-bar
+                        mode="determinate"
+                        [value]="s.alertDistribution.amberPercent"
+                        color="accent"
+                        class="progress-bar"
+                      ></mat-progress-bar>
+                      <div class="bar-count">{{ s.alertDistribution.amber }} patients</div>
                     </div>
-                  }
+                    <div class="alert-bar-item">
+                      <div class="bar-header">
+                        <span class="bar-label">Red</span>
+                        <span class="bar-value">{{ s.alertDistribution.redPercent | number:'1.0-1' }}%</span>
+                      </div>
+                      <mat-progress-bar
+                        mode="determinate"
+                        [value]="s.alertDistribution.redPercent"
+                        color="warn"
+                        class="progress-bar"
+                      ></mat-progress-bar>
+                      <div class="bar-count">{{ s.alertDistribution.red }} patients</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Average Burden -->
+                <mat-card class="stat-card" [class.normal]="s.avgBurden >= 30 && s.avgBurden <= 55" [class.strain]="s.avgBurden >= 70">
+                  <mat-card-content>
+                    <div class="stat-content">
+                      <div class="stat-icon">
+                        <mat-icon>trending_up</mat-icon>
+                      </div>
+                      <div class="stat-details">
+                        <div class="stat-value">{{ s.avgBurden | number:'1.0-1' }}</div>
+                        <div class="stat-label">Average Burden</div>
+                        <div class="stat-hint">30–55 normal · 70+ sustained strain</div>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Missed Check-In Rate -->
+                <mat-card class="stat-card warning">
+                  <mat-card-content>
+                    <div class="stat-content">
+                      <div class="stat-icon warning">
+                        <mat-icon>schedule</mat-icon>
+                      </div>
+                      <div class="stat-details">
+                        <div class="stat-value">{{ s.missedCheckInRate | number:'1.0-1' }}%</div>
+                        <div class="stat-label">Missed Check-In Rate</div>
+                        <div class="stat-hint">Engagement health</div>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Equity Overview Section -->
+          <mat-card class="section-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>balance</mat-icon>
+                Equity Overview
+              </mat-card-title>
+              <mat-card-subtitle>Average burden and % RED by accessibility flag</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="equity-grid">
+                <!-- Average Burden by Flag -->
+                <div class="equity-chart">
+                  <h3>Average Burden by Flag</h3>
+                  <div class="equity-bars">
+                    @for (key of equityKeys; track key) {
+                      <div class="equity-bar-item">
+                        <div class="bar-header">
+                          <span class="bar-label">{{ EQUITY_LABELS[key] }}</span>
+                          <span class="bar-value">{{ s.avgBurdenByFlag[key] | number:'1.0-1' }}</span>
+                        </div>
+                        <mat-progress-bar
+                          mode="determinate"
+                          [value]="s.avgBurdenByFlag[key]"
+                          class="progress-bar neutral"
+                        ></mat-progress-bar>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- % Red by Flag -->
+                <div class="equity-chart">
+                  <h3>% Red by Flag</h3>
+                  <div class="equity-bars">
+                    @for (key of equityKeys; track key) {
+                      <div class="equity-bar-item">
+                        <div class="bar-header">
+                          <span class="bar-label">{{ EQUITY_LABELS[key] }}</span>
+                          <span class="bar-value">{{ s.redRateByFlag[key] | number:'1.0-1' }}%</span>
+                        </div>
+                        <mat-progress-bar
+                          mode="determinate"
+                          [value]="s.redRateByFlag[key]"
+                          color="warn"
+                          class="progress-bar"
+                        ></mat-progress-bar>
+                      </div>
+                    }
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </mat-card-content>
+          </mat-card>
 
-          <!-- Footer: Model anchors & sources -->
-          <footer class="footer">
-            <h3>Model anchors &amp; sources</h3>
-            <ul>
-              <li>CIHI median total stay: {{ MEDIAN_TOTAL_STAY_MINUTES }} min</li>
-              <li>CIHI median to physician: {{ MEDIAN_TO_PHYSICIAN_MINUTES }} min</li>
-              <li>McMaster early risk threshold: {{ MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES }} min</li>
-              <li>LWBS rates source: HQCA</li>
-              <li>Vulnerability weights source: Statistics Canada</li>
-            </ul>
-          </footer>
+          <!-- Model Anchors Section -->
+          <mat-card class="section-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>book</mat-icon>
+                Model Anchors & Sources
+              </mat-card-title>
+              <mat-card-subtitle>Reference values from research studies</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="anchors-grid">
+                <div class="anchor-item">
+                  <mat-icon class="anchor-icon">science</mat-icon>
+                  <div class="anchor-content">
+                    <h4>CIHI Medians</h4>
+                    <ul>
+                      <li>Total stay: <strong>{{ MEDIAN_TOTAL_STAY_MINUTES }} min</strong></li>
+                      <li>Time to physician: <strong>{{ MEDIAN_TO_PHYSICIAN_MINUTES }} min</strong></li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="anchor-item">
+                  <mat-icon class="anchor-icon">school</mat-icon>
+                  <div class="anchor-content">
+                    <h4>McMaster Study</h4>
+                    <ul>
+                      <li>Early risk threshold: <strong>{{ MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES }} min</strong></li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="anchor-item">
+                  <mat-icon class="anchor-icon">local_hospital</mat-icon>
+                  <div class="anchor-content">
+                    <h4>LWBS Source</h4>
+                    <ul>
+                      <li>Health Quality Council of Alberta (HQCA)</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="anchor-item">
+                  <mat-icon class="anchor-icon">bar_chart</mat-icon>
+                  <div class="anchor-content">
+                    <h4>Weights Source</h4>
+                    <ul>
+                      <li>Statistics Canada – Disability in Canada (2024)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="safety-notice">
+                <mat-icon>security</mat-icon>
+                <div>
+                  <strong>Safety:</strong> Admin cannot change thresholds, weights, patients, LWBS scaling, or triage.
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
         } @else {
-          <p class="empty">No data. Add patients from Staff dashboard.</p>
+          <app-skeleton-loader type="card" [rows]="3"></app-skeleton-loader>
         }
-      </main>
-
-      <nav class="nav">
-        <a routerLink="/staff">Staff</a>
-        <a routerLink="/admin" routerLinkActive="active">Admin</a>
-        <button type="button" class="nav-signout" (click)="signOut()">Sign out</button>
-      </nav>
-    </div>
+      </div>
+    </app-dashboard-layout>
   `,
   styles: [`
-    .admin-layout { min-height: 100vh; display: flex; flex-direction: column; background: #fff; }
-    .header { padding: 1.5rem; background: #4a148c; color: white; }
-    .header h1 { margin: 0; font-size: 1.5rem; }
-    .subtitle { margin: 0.25rem 0 0; opacity: 0.9; font-size: 0.9rem; }
-    .content { flex: 1; padding: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
-    .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
-    .card h2 { margin: 0 0 1rem; font-size: 1.1rem; color: #333; }
-    .card h3 { margin: 0 0 0.5rem; font-size: 0.9rem; color: #555; }
-    .model-health-grid { display: grid; grid-template-columns: 1fr auto auto; gap: 1.5rem; align-items: start; }
-    @media (max-width: 600px) { .model-health-grid { grid-template-columns: 1fr; } }
-    .alert-bars .bar-row { margin-bottom: 0.5rem; }
-    .bar-row { display: flex; align-items: center; gap: 0.5rem; }
-    .bar-label { min-width: 5rem; font-size: 0.9rem; }
-    .bar-track { flex: 1; height: 1.25rem; background: #eee; border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; min-width: 0; transition: width 0.2s; }
-    .bar-fill.green { background: #2e7d32; }
-    .bar-fill.amber { background: #ff9800; }
-    .bar-fill.red { background: #c62828; }
-    .bar-fill.neutral { background: #5c6bc0; }
-    .bar-value { font-size: 0.9rem; font-weight: 600; min-width: 2.5rem; }
-    .avg-burden-cell .big-number { font-size: 2.5rem; font-weight: 700; }
-    .avg-burden-cell .big-number.normal { color: #2e7d32; }
-    .avg-burden-cell .big-number.strain { color: #c62828; }
-    .hint { font-size: 0.8rem; color: #888; margin: 0.25rem 0 0; }
-    .badge.missed-badge { font-size: 1rem; padding: 0.35rem 0.75rem; background: #ff9800; color: #fff; border-radius: 6px; font-weight: 600; }
-    .equity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    @media (max-width: 700px) { .equity-grid { grid-template-columns: 1fr; } }
-    .chart-block .flag-bars .bar-row { margin-bottom: 0.5rem; }
-    .footer { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0; font-size: 0.9rem; color: #666; }
-    .footer h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
-    .footer ul { margin: 0; padding-left: 1.25rem; }
-    .footer li { margin-bottom: 0.25rem; }
-    .empty { color: #888; padding: 1rem; }
-    .nav { display: flex; gap: 1rem; padding: 1rem; background: #f5f5f5; }
-    .nav a { color: #6a1b9a; text-decoration: none; }
-    .nav a.active { font-weight: 600; }
-    .nav-signout { margin-left: auto; padding: 0.35rem 0.6rem; background: transparent; border: 1px solid #6a1b9a; color: #6a1b9a; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
-    .nav-signout:hover { background: #6a1b9a; color: white; }
+    .admin-dashboard {
+      padding: 24px;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .page-header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1A1A2E;
+      margin: 0 0 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin: 0;
+    }
+
+    .read-only-chip {
+      font-weight: 500;
+    }
+
+    .section-card {
+      margin-bottom: 24px;
+    }
+
+    .section-card mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .section-card mat-icon {
+      color: #1E3A5F;
+    }
+
+    .model-health-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 24px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 1024px) {
+      .model-health-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .alert-distribution {
+      flex: 1;
+    }
+
+    .alert-distribution h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1A1A2E;
+      margin: 0 0 16px;
+    }
+
+    .alert-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .alert-bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .bar-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1A1A2E;
+    }
+
+    .bar-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1A1A2E;
+    }
+
+    .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+    }
+
+    .progress-bar.neutral {
+      ::ng-deep .mdc-linear-progress__buffer {
+        background-color: #E0E0E0;
+      }
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        background-color: #1E3A5F;
+      }
+    }
+
+    .bar-count {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .stat-card {
+      border-left: 4px solid #1E3A5F;
+    }
+
+    .stat-card.normal {
+      border-left-color: #2e7d32;
+    }
+
+    .stat-card.strain {
+      border-left-color: #d32f2f;
+    }
+
+    .stat-card.warning {
+      border-left-color: #f57c00;
+    }
+
+    .stat-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #F4F6F9;
+
+      mat-icon {
+        color: #1E3A5F;
+        font-size: 24px;
+      }
+
+      &.warning mat-icon {
+        color: #f57c00;
+      }
+    }
+
+    .stat-details {
+      flex: 1;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1A1A2E;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .stat-hint {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .equity-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .equity-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .equity-chart h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1A1A2E;
+      margin: 0 0 16px;
+    }
+
+    .equity-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .equity-bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .anchors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .anchor-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: #F4F6F9;
+      border-radius: 8px;
+      border-left: 3px solid #1E3A5F;
+    }
+
+    .anchor-icon {
+      color: #1E3A5F;
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+    }
+
+    .anchor-content h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1A1A2E;
+      margin: 0 0 8px;
+    }
+
+    .anchor-content ul {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .anchor-content li {
+      margin-bottom: 4px;
+    }
+
+    .safety-notice {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #FFF3E0;
+      border-left: 4px solid #f57c00;
+      border-radius: 4px;
+      margin-top: 24px;
+      font-size: 13px;
+      color: #E65100;
+
+      mat-icon {
+        color: #f57c00;
+      }
+    }
   `],
 })
 export class AdminComponent {
@@ -176,6 +564,11 @@ export class AdminComponent {
   readonly MEDIAN_TOTAL_STAY_MINUTES = MEDIAN_TOTAL_STAY_MINUTES;
   readonly MEDIAN_TO_PHYSICIAN_MINUTES = MEDIAN_TO_PHYSICIAN_MINUTES;
   readonly MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES = MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES;
+
+  navItems: NavItem[] = [
+    { label: 'Staff Dashboard', icon: 'dashboard', route: '/staff' },
+    { label: 'Admin Dashboard', icon: 'admin_panel_settings', route: '/admin' },
+  ];
 
   signOut(): void {
     this.auth.clear();

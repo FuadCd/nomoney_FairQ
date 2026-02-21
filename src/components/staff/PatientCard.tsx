@@ -1,8 +1,11 @@
 'use client'
 
+import { motion } from 'framer-motion'
+import { AlertTriangle, Clock, TrendingUp, Users } from 'lucide-react'
 import type { PatientProfile } from '../../types'
 import { shouldShowDisengagementWarning, getSuggestedAction, hasMissedCheckIn } from '../../lib/utils/burden'
 import { CHECK_IN_INTERVAL_MS } from '../../lib/model/modelConstants'
+import { cn } from '@/lib/utils/cn'
 
 interface PatientCardProps {
   patient: PatientProfile
@@ -11,22 +14,25 @@ interface PatientCardProps {
 
 const statusConfig = {
   GREEN: {
-    border: 'border-green-400',
-    bg: 'bg-gradient-to-br from-green-50 to-emerald-50',
+    border: 'border-green-500/50',
+    bg: 'bg-green-500/5',
     badge: 'bg-green-600 text-white',
     dot: 'bg-green-500',
+    text: 'text-green-600',
   },
   AMBER: {
-    border: 'border-amber-400',
-    bg: 'bg-gradient-to-br from-amber-50 to-orange-50',
+    border: 'border-amber-500/50',
+    bg: 'bg-amber-500/5',
     badge: 'bg-amber-600 text-white',
     dot: 'bg-amber-500',
+    text: 'text-amber-600',
   },
   RED: {
-    border: 'border-red-500',
-    bg: 'bg-gradient-to-br from-red-50 to-rose-50',
+    border: 'border-red-500/50',
+    bg: 'bg-red-500/5',
     badge: 'bg-red-600 text-white',
     dot: 'bg-red-500',
+    text: 'text-red-600',
   },
 }
 
@@ -53,18 +59,29 @@ export default function PatientCard({ patient, onClick }: PatientCardProps) {
     .map(([k]) => k)
   
   return (
-    <div
-      className={`group relative border-l-4 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${config.bg} ${config.border}`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.01, y: -2 }}
       onClick={onClick}
+      className={cn(
+        "group relative border-l-4 rounded-xl p-6 cursor-pointer transition-all duration-300",
+        "bg-card border-border shadow-md hover:shadow-xl",
+        config.border, config.bg
+      )}
     >
       {/* Status Badge */}
       <div className="absolute top-4 right-4 flex items-center space-x-2">
         {missedCheckIn && (
-          <span className="text-xs bg-orange-500 text-white px-3 py-1 rounded-full font-semibold shadow-md animate-pulse">
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="text-xs bg-orange-500 text-white px-3 py-1 rounded-full font-semibold shadow-md"
+          >
             ⚠ Missed Check-in
-          </span>
+          </motion.span>
         )}
-        <span className={`text-xs font-bold px-3 py-1 rounded-full shadow-md ${config.badge}`}>
+        <span className={cn("text-xs font-bold px-3 py-1 rounded-full shadow-md", config.badge)}>
           {patient.alertStatus}
         </span>
       </div>
@@ -72,45 +89,56 @@ export default function PatientCard({ patient, onClick }: PatientCardProps) {
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-center space-x-3 mb-2">
-          <div className={`w-3 h-3 rounded-full ${config.dot} ${showDisengagement ? 'animate-pulse' : ''}`} />
-          <span className="font-mono text-lg font-bold text-gray-800">
+          <motion.div
+            className={cn("w-3 h-3 rounded-full", config.dot)}
+            animate={showDisengagement ? { scale: [1, 1.2, 1] } : {}}
+            transition={{ repeat: Infinity, duration: 2 }}
+          />
+          <span className="font-mono text-lg font-bold text-foreground">
             {patient.passportId}
           </span>
-          <span className="text-xs bg-gray-800 text-white px-2 py-1 rounded font-bold">
+          <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded font-bold">
             CTAS {patient.ctasLevel}
           </span>
         </div>
-        <p className="text-sm text-gray-600 font-medium">{patient.assignedHospitalName}</p>
+        <p className="text-sm text-muted-foreground font-medium">{patient.assignedHospitalName}</p>
       </div>
       
       {/* Chief Complaint */}
       <div className="mb-4">
-        <p className="text-base font-semibold text-gray-900">{patient.chiefComplaint}</p>
+        <p className="text-base font-semibold text-foreground">{patient.chiefComplaint}</p>
       </div>
       
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 mb-1">Wait Time</div>
-          <div className="text-xl font-bold text-gray-900">{patient.minutesWaited}m</div>
+        <div className="bg-muted/50 rounded-lg p-3 backdrop-blur-sm">
+          <div className="text-xs text-muted-foreground mb-1 flex items-center">
+            <Clock className="h-3 w-3 mr-1" />
+            Wait Time
+          </div>
+          <div className="text-xl font-bold text-foreground">{patient.minutesWaited}m</div>
         </div>
-        <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 mb-1">Burden</div>
-          <div className={`text-xl font-bold ${
+        <div className="bg-muted/50 rounded-lg p-3 backdrop-blur-sm">
+          <div className="text-xs text-muted-foreground mb-1 flex items-center">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            Burden
+          </div>
+          <div className={cn(
+            "text-xl font-bold",
             patient.burden >= 70 ? 'text-red-600'
             : patient.burden >= 50 ? 'text-amber-600'
             : 'text-green-600'
-          }`}>
+          )}>
             {Math.round(patient.burden)}
           </div>
         </div>
-        <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 mb-1">Equity Gap</div>
-          <div className="text-lg font-semibold text-gray-900">{Math.round(patient.equityGapScore)}</div>
+        <div className="bg-muted/50 rounded-lg p-3 backdrop-blur-sm">
+          <div className="text-xs text-muted-foreground mb-1">Equity Gap</div>
+          <div className="text-lg font-semibold text-foreground">{Math.round(patient.equityGapScore)}</div>
         </div>
-        <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 mb-1">Vulnerability</div>
-          <div className="text-lg font-semibold text-gray-900">
+        <div className="bg-muted/50 rounded-lg p-3 backdrop-blur-sm">
+          <div className="text-xs text-muted-foreground mb-1">Vulnerability</div>
+          <div className="text-lg font-semibold text-foreground">
             {Math.round(patient.vulnerabilityScore * 100)}%
           </div>
         </div>
@@ -120,41 +148,46 @@ export default function PatientCard({ patient, onClick }: PatientCardProps) {
       {activeFlags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {activeFlags.map((flag) => (
-            <span
+            <motion.span
               key={flag}
-              className="text-lg bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg"
+              whileHover={{ scale: 1.1 }}
+              className="text-lg bg-muted px-2 py-1 rounded-lg"
               title={flag.replace(/([A-Z])/g, ' $1').trim()}
             >
               {flagIcons[flag] || '?'}
-            </span>
+            </motion.span>
           ))}
         </div>
       )}
       
       {/* Disengagement Warning */}
       {showDisengagement && (
-        <div className="mb-4 p-3 bg-red-100 border-2 border-red-300 rounded-lg">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 bg-red-500/10 border-2 border-red-500/30 rounded-lg"
+        >
           <div className="flex items-center space-x-2 mb-1">
-            <span className="text-red-600 font-bold">⚠️</span>
-            <span className="text-sm font-bold text-red-800">Disengagement Risk</span>
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <span className="text-sm font-bold text-red-600">Disengagement Risk</span>
           </div>
           {patient.disengagementWindowMinutes && (
-            <div className="text-xs text-red-700">
+            <div className="text-xs text-red-600/80">
               Window: {patient.disengagementWindowMinutes} min
             </div>
           )}
-        </div>
+        </motion.div>
       )}
       
       {/* Suggested Action */}
       {suggestedAction && (
-        <div className="bg-white/80 backdrop-blur-sm border border-blue-200 rounded-lg p-3">
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
           <div className="flex items-start space-x-2">
-            <span className="text-blue-600 text-lg">💡</span>
-            <p className="text-sm text-gray-700 font-medium">{suggestedAction}</p>
+            <span className="text-primary text-lg">💡</span>
+            <p className="text-sm text-foreground font-medium">{suggestedAction}</p>
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

@@ -1,8 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { Clock, AlertCircle, CheckCircle, XCircle, ArrowRight, Edit } from 'lucide-react'
 import { usePatientStore } from '../../../lib/store/patientStore'
 import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils/cn'
 
 export default function PatientWaitingPage() {
   const router = useRouter()
@@ -17,87 +20,129 @@ export default function PatientWaitingPage() {
   
   if (!patient) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-gray-700 mb-4">No patient found</p>
-          <button
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <p className="text-xl text-foreground mb-4">No patient found</p>
+          <motion.button
             onClick={() => router.push('/patient/intake')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
           >
             Start Intake
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
     )
   }
   
+  const statusConfig = {
+    GREEN: { color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', icon: CheckCircle },
+    AMBER: { color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', icon: AlertCircle },
+    RED: { color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', icon: XCircle },
+  }
+  
+  const status = statusConfig[patient.alertStatus]
+  const StatusIcon = status.icon
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <h1 className="text-3xl font-bold text-white mb-2">Waiting Room</h1>
-            <p className="text-blue-100">Your Accessibility Passport</p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
+        >
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6">
+            <h1 className="text-3xl font-bold text-primary-foreground mb-2">Waiting Room</h1>
+            <p className="text-primary-foreground/80">Your Accessibility Passport</p>
           </div>
           
           <div className="p-8">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200 mb-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className={cn(
+                "rounded-lg p-6 border-2 mb-6",
+                status.bg,
+                status.border
+              )}
+            >
               <div className="text-center mb-4">
-                <div className="text-4xl font-mono font-black text-blue-600 mb-2">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                  className="text-4xl font-mono font-black text-primary mb-2"
+                >
                   {patient.passportId}
-                </div>
-                <p className="text-sm text-gray-600">Your Patient ID</p>
+                </motion.div>
+                <p className="text-sm text-muted-foreground">Your Patient ID</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Hospital:</span>
-                  <p className="font-semibold text-gray-900">{patient.assignedHospitalName}</p>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground">Hospital:</span>
+                  <p className="font-semibold text-foreground">{patient.assignedHospitalName}</p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Estimated Wait:</span>
-                  <p className="font-semibold text-gray-900">{patient.minutesWaited} minutes</p>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Time Waited:
+                  </span>
+                  <p className="font-semibold text-foreground">{patient.minutesWaited} minutes</p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Current Burden:</span>
-                  <p className={`font-bold text-lg ${
+                <div className="space-y-1">
+                  <span className="text-muted-foreground">Current Burden:</span>
+                  <p className={cn(
+                    "font-bold text-lg",
                     patient.burden >= 70 ? 'text-red-600'
                     : patient.burden >= 50 ? 'text-amber-600'
                     : 'text-green-600'
-                  }`}>
-                    {Math.round(patient.burden)}
+                  )}>
+                    {Math.round(patient.burden)}/100
                   </p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Status:</span>
-                  <p className={`font-semibold ${
-                    patient.alertStatus === 'RED' ? 'text-red-600'
-                    : patient.alertStatus === 'AMBER' ? 'text-amber-600'
-                    : 'text-green-600'
-                  }`}>
-                    {patient.alertStatus}
-                  </p>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground">Status:</span>
+                  <div className="flex items-center space-x-2">
+                    <StatusIcon className={cn("h-4 w-4", status.color)} />
+                    <p className={cn("font-semibold", status.color)}>
+                      {patient.alertStatus}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
             
             <div className="space-y-4">
-              <button
+              <motion.button
                 onClick={() => router.push('/patient/checkin')}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/30"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-primary text-primary-foreground py-4 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center"
               >
-                Check-In (20-minute interval) →
-              </button>
+                20-Minute Check-In
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </motion.button>
               
-              <button
+              <motion.button
                 onClick={() => router.push('/patient/intake')}
-                className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-muted text-muted-foreground py-3 px-6 rounded-lg font-semibold hover:bg-accent transition-all flex items-center justify-center"
               >
+                <Edit className="h-4 w-4 mr-2" />
                 Update Profile
-              </button>
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )
