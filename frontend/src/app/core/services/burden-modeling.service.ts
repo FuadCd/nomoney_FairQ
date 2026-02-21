@@ -32,9 +32,20 @@ export interface ComputeBurdenInput {
   }[];
 }
 
+export interface EstimatedWaitInput {
+  facilityId: string;
+  vulnerabilityMultiplier: number;
+  estimatedCtasLevel: number;
+  waitTimeMinutes: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BurdenModelingService {
   constructor(private api: ApiService) {}
+
+  getEstimatedWaitMinutes(input: EstimatedWaitInput): Observable<{ estimatedWaitMinutes: number }> {
+    return this.api.post('/burden-modeling/estimated-wait', input);
+  }
 
   computeBurden(input: ComputeBurdenInput): Observable<{
     burdenCurve: BurdenCurvePoint[];
@@ -44,6 +55,9 @@ export class BurdenModelingService {
     suggestAmberCheckIn: boolean;
     baselineCurve: unknown[];
     confidenceInterval: number;
+    burden?: number;
+    alertStatus?: 'GREEN' | 'AMBER' | 'RED';
+    disengagementWindowMinutes?: number;
   }> {
     return this.api.post('/burden-modeling/compute', input);
   }
