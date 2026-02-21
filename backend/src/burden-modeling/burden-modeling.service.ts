@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ComputeBurdenDto } from './dto/compute-burden.dto';
+import { WaitTimesService } from '../wait-times/wait-times.service';
 
 export interface BurdenCurvePoint {
   timeMinutes: number;
@@ -12,13 +13,25 @@ export interface BurdenCurvePoint {
 export class BurdenModelingService {
   private readonly MONTE_CARLO_ITERATIONS = 200;
 
+  constructor(private readonly waitTimesService: WaitTimesService) {}
+
   computeBurden(dto: ComputeBurdenDto) {
     const points: BurdenCurvePoint[] = [];
     const maxTime = Math.min(180, dto.waitTimeMinutes + 60); // Up to 3 hours
 
+    const hospital = this.waitTimesService.getHospitalWaitTime(dto.facilityId);
+    const expectedWait = hospital?.waitMinutes ?? 180;
+
     for (let t = 0; t <= maxTime; t += 5) {
+      const baseWaitingImpact = Math.min(
+        (t / expectedWait) * 50,
+        60,
+      );
       const baselineHazard = this.baselineHazard(t, dto.estimatedCtasLevel);
-      const risk = baselineHazard * dto.vulnerabilityMultiplier;
+      const risk =
+        baselineHazard *
+        dto.vulnerabilityMultiplier *
+        (1 + baseWaitingImpact / 100);
 
       points.push({
         timeMinutes: t,

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ALBERTA_WAITTIMES_SNAPSHOT } from './alberta-waittimes.snapshot';
 
 export interface ErFacility {
   id: string;
@@ -10,24 +11,26 @@ export interface ErFacility {
 
 @Injectable()
 export class WaitTimesService {
-  // Placeholder: integrate with AHS ER wait-time data when available
+  getSnapshot() {
+    return ALBERTA_WAITTIMES_SNAPSHOT;
+  }
+
+  getHospitalWaitTime(hospitalKey: string) {
+    const hospital =
+      (ALBERTA_WAITTIMES_SNAPSHOT.hospitals as Record<string, { key: string; name: string; city: string; waitMinutes: number }>)[hospitalKey];
+    if (!hospital) return null;
+    return hospital;
+  }
+
   getFacilities(): ErFacility[] {
-    return [
-      {
-        id: '1',
-        name: 'Foothills Medical Centre',
-        city: 'Calgary',
-        averageWaitMinutes: 72,
-        lastUpdated: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        name: 'Rockyview General Hospital',
-        city: 'Calgary',
-        averageWaitMinutes: 58,
-        lastUpdated: new Date().toISOString(),
-      },
-    ];
+    const hospitals = Object.values(ALBERTA_WAITTIMES_SNAPSHOT.hospitals);
+    return hospitals.map((h, i) => ({
+      id: String(i + 1),
+      name: h.name,
+      city: h.city,
+      averageWaitMinutes: h.waitMinutes,
+      lastUpdated: ALBERTA_WAITTIMES_SNAPSHOT.snapshotTakenAt,
+    }));
   }
 
   getCurrentWaitTimes() {
