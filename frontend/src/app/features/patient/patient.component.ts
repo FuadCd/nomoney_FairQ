@@ -1,4 +1,4 @@
-import { Component, Injectable, signal, computed, inject } from '@angular/core';
+import { Component, Injectable, signal, computed, inject, effect, afterNextRender, DestroyRef } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 /* ─── Shared accessibility profile type ─── */
@@ -155,9 +155,7 @@ export class A11yModeService {
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('a11y_hc') === '1',
   );
   readonly fontScale = signal(
-    typeof sessionStorage !== 'undefined'
-      ? +(sessionStorage.getItem('a11y_fs') ?? '1')
-      : 1,
+    typeof sessionStorage !== 'undefined' ? +(sessionStorage.getItem('a11y_fs') ?? '1') : 1,
   );
   readonly tts = signal(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('a11y_tts') === '1',
@@ -194,11 +192,12 @@ export class A11yModeService {
     }
   }
 
-  speak(text: string): void {
+  speak(text: string, lang = 'en'): void {
     if (!this.tts() || typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en';
+    u.lang = lang === 'fr' ? 'fr-CA' : 'en-US';
+    u.rate = 0.9;
     speechSynthesis.speak(u);
   }
 
@@ -214,17 +213,47 @@ export class A11yModeService {
   standalone: true,
   imports: [RouterOutlet],
   template: `
-    <div class="patient-layout" [class.hc]="a11y.highContrast()" [style.fontSize]="a11y.fontScale() + 'rem'">
+    <div class="patient-layout" [class.hc]="a11y.highContrast()">
       <header class="header">
         <div class="header-top">
           <h1>AccessER</h1>
           <div class="a11y-toggles">
-            <button class="toggle-btn lang" [class.on]="i18n.locale() === 'en'" (click)="i18n.setLocale('en')">EN</button>
-            <button class="toggle-btn lang" [class.on]="i18n.locale() === 'fr'" (click)="i18n.setLocale('fr')">FR</button>
-            <button class="toggle-btn" (click)="a11y.toggleTts()" [class.on]="a11y.tts()" [attr.aria-label]="i18n.t('ttsLabel')">🔊</button>
-            <button class="toggle-btn" (click)="a11y.toggleHighContrast()" [class.on]="a11y.highContrast()" [attr.aria-label]="i18n.t('highContrast')">◑</button>
-            <button class="toggle-btn" (click)="a11y.decreaseFontSize()" aria-label="Decrease text">A−</button>
-            <button class="toggle-btn" (click)="a11y.increaseFontSize()" aria-label="Increase text">A+</button>
+            <button
+              class="toggle-btn lang"
+              [class.on]="i18n.locale() === 'en'"
+              (click)="i18n.setLocale('en')"
+            >
+              EN
+            </button>
+            <button
+              class="toggle-btn lang"
+              [class.on]="i18n.locale() === 'fr'"
+              (click)="i18n.setLocale('fr')"
+            >
+              FR
+            </button>
+            <button
+              class="toggle-btn"
+              (click)="a11y.toggleTts()"
+              [class.on]="a11y.tts()"
+              [attr.aria-label]="i18n.t('ttsLabel')"
+            >
+              🔊
+            </button>
+            <button
+              class="toggle-btn"
+              (click)="a11y.toggleHighContrast()"
+              [class.on]="a11y.highContrast()"
+              [attr.aria-label]="i18n.t('highContrast')"
+            >
+              ◑
+            </button>
+            <button class="toggle-btn" (click)="a11y.decreaseFontSize()" aria-label="Decrease text">
+              A−
+            </button>
+            <button class="toggle-btn" (click)="a11y.increaseFontSize()" aria-label="Increase text">
+              A+
+            </button>
           </div>
         </div>
       </header>
@@ -253,7 +282,9 @@ export class A11yModeService {
         align-items: center;
         background: var(--p-bg);
         color: var(--p-fg);
-        transition: background 0.2s, color 0.2s;
+        transition:
+          background 0.2s,
+          color 0.2s;
       }
       .patient-layout.hc {
         --p-bg: #000;
@@ -330,4 +361,49 @@ export class A11yModeService {
 export class PatientComponent {
   readonly i18n = inject(I18nService);
   readonly a11y = inject(A11yModeService);
+  private readonly destroyRef = inject(DestroyRef);
+  private observer?: MutationObserver;
+  private speakTimer?: ReturnType<typeof setTimeout>;
+
+  constructor() {
+    /* Sync fontScale → <html> root so all rem units scale */
+    effect(() => {
+      const scale = this.a11y.fontScale();
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.fontSize = scale * 100 + '%';
+      }
+    });
+
+    /* When TTS toggled ON, read current screen */
+    effect(() => {
+      if (this.a11y.tts()) {
+        this.debouncedSpeak();
+      }
+    });
+
+    /* Observe .content for child-list / text changes → auto-speak */
+    afterNextRender(() => {
+      const el = document.querySelector('.content');
+      if (!el) return;
+      this.observer = new MutationObserver(() => this.debouncedSpeak());
+      this.observer.observe(el, { childList: true, subtree: true, characterData: true });
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.observer?.disconnect();
+      clearTimeout(this.speakTimer);
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.fontSize = '';
+      }
+    });
+  }
+
+  private debouncedSpeak(): void {
+    clearTimeout(this.speakTimer);
+    this.speakTimer = setTimeout(() => {
+      if (!this.a11y.tts() || typeof document === 'undefined') return;
+      const text = document.querySelector('.content')?.textContent?.trim();
+      if (text) this.a11y.speak(text, this.i18n.locale());
+    }, 500);
+  }
 }
