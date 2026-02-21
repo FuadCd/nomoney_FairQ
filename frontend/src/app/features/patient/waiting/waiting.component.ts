@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { I18nService } from '../patient.component';
 
 @Component({
@@ -8,6 +8,7 @@ import { I18nService } from '../patient.component';
   imports: [RouterLink],
   template: `
     <div class="waiting fade-in">
+      <button type="button" class="back-link back-btn" (click)="back()">&larr; Back</button>
       <div class="check-icon">✅</div>
       <h2>{{ i18n.t('waitingTitle') }}</h2>
       <p class="pid">
@@ -25,6 +26,24 @@ import { I18nService } from '../patient.component';
       .waiting {
         text-align: center;
         padding: 2rem 0.5rem;
+      }
+      .back-link {
+        display: block;
+        text-align: left;
+        margin-bottom: 1rem;
+        color: var(--p-accent, #0d47a1);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
+      .back-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        cursor: pointer;
       }
       .fade-in {
         animation: fadeSlide 0.3s ease-out;
@@ -90,6 +109,13 @@ import { I18nService } from '../patient.component';
 })
 export class WaitingComponent {
   readonly i18n = inject(I18nService);
+  private readonly router = inject(Router);
+
+  /** Back: previous in session sequence is Intake step 3 (confirm). */
+  back(): void {
+    this.router.navigate(['/patient/intake/3']);
+  }
+
   readonly patientId = signal(
     typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('patient_id') ?? '—') : '—',
   );

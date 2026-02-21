@@ -1,16 +1,27 @@
 import { Routes } from '@angular/router';
+import { staffGuard } from './core/auth/staff.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'patient', pathMatch: 'full' },
+  {
+    path: '',
+    loadComponent: () =>
+      import('./features/landing/landing.component').then((m) => m.LandingComponent),
+    title: 'AccessER',
+  },
   {
     path: 'patient',
     loadComponent: () =>
       import('./features/patient/patient.component').then((m) => m.PatientComponent),
     title: 'Patient Intake | AccessER',
     children: [
-      { path: '', redirectTo: 'intake', pathMatch: 'full' },
+      { path: '', redirectTo: 'intake/1', pathMatch: 'full' },
       {
         path: 'intake',
+        redirectTo: 'intake/1',
+        pathMatch: 'full',
+      },
+      {
+        path: 'intake/:step',
         loadComponent: () =>
           import('./features/patient/intake/intake.component').then((m) => m.IntakeComponent),
       },
@@ -30,11 +41,13 @@ export const routes: Routes = [
     path: 'staff',
     loadComponent: () => import('./features/staff/staff.component').then((m) => m.StaffComponent),
     title: 'Staff Dashboard | AccessER',
+    canActivate: [staffGuard],
   },
   {
     path: 'admin',
     loadComponent: () => import('./features/admin/admin.component').then((m) => m.AdminComponent),
     title: 'Equity Simulator | AccessER',
+    canActivate: [staffGuard],
   },
-  { path: '**', redirectTo: 'patient' },
+  { path: '**', redirectTo: '' },
 ];
