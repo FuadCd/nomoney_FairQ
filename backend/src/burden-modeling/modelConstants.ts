@@ -23,3 +23,6 @@ export const MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES = 87;
 
 /** Gate for disengagement warning — only show when waited this long or planning to leave or burden ≥ 70. */
 export const MEDIAN_LWBS_TRIGGER_MINUTES = 87;
+
+/** Max curve horizon (minutes) — extends distress/LWBS curves for long waits. */
+export const CURVE_HORIZON_CAP_MINUTES = 420; // 7 hours

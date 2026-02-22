@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { PatientsService } from './patients.service';
 import type { StoredPatient } from './patients.service';
 import { RegisterPatientDto } from './dto/register-patient.dto';
@@ -27,6 +27,17 @@ export class PatientsController {
       return this.patientsService.getByHospital(hospitalKey.trim());
     }
     return this.patientsService.getAll();
+  }
+
+  @Post(':id/staff-checkin')
+  recordStaffCheckIn(@Param('id') id: string): StoredPatient | null {
+    const patient = this.patientsService.recordStaffCheckIn(id);
+    return patient ?? null;
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string): { ok: boolean } {
+    return { ok: this.patientsService.remove(id) };
   }
 
   @Post(':id/checkins')

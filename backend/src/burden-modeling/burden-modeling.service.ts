@@ -6,6 +6,7 @@ import {
   MEDIAN_TO_PHYSICIAN_MINUTES,
   MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES,
   MEDIAN_LWBS_TRIGGER_MINUTES,
+  CURVE_HORIZON_CAP_MINUTES,
 } from './modelConstants';
 import { VULNERABILITY_WEIGHTS } from './vulnerabilityWeights';
 import { EstimatedWaitDto } from './dto/estimated-wait.dto';
@@ -25,52 +26,93 @@ export class BurdenModelingService {
 
   computeBurden(dto: ComputeBurdenDto) {
     const points: BurdenCurvePoint[] = [];
-    const maxTime = Math.min(180, dto.waitTimeMinutes + 60); // Up to 3 hours
+    const hospital = this.waitTimesService.getHospitalWaitTime(dto.facilityId);
+    const expectedWaitMinutes = hospital?.waitMinutes ?? MEDIAN_TOTAL_STAY_MINUTES;
+
+    // Change 3: Extend curve horizon to 6–7 hours
+    const maxTime = Math.min(
+      dto.waitTimeMinutes + 60,
+      CURVE_HORIZON_CAP_MINUTES,
+    );
 
     const vulnerabilityMultiplier = dto.profile
       ? this.computeVulnerabilityMultiplier(dto.profile)
-      : (dto.vulnerabilityMultiplier ?? 1);
+      : dto.vulnerabilityMultiplier;
+
+    // Unknown profile → vulnScore = 0 (avoid inflating unknown users).
+    const vulnScore = this.normalizeVulnScore(vulnerabilityMultiplier);
 
     const leaveSignalWeight =
       this.waitTimesService.computeLeaveSignalWeight(dto.facilityId);
+    const baselineLWBS = hospital?.lwbsRate ?? 0.05;
 
     const planningToLeave = dto.checkInResponses?.some(
       (r) => r.intendsToStay === false,
     );
 
-    for (let t = 0; t <= maxTime; t += 5) {
-      const baselineHazard = this.baselineHazard(t, dto.estimatedCtasLevel);
-      const risk = baselineHazard * vulnerabilityMultiplier;
+    // No global vulnerability multiplier inside curves; only component-specific boosts (LWBS equity).
+    const profileBoosts = dto.profile
+      ? this.getProfileCurveBoosts(dto.profile)
+      : { distressBoost: 1, lwbsBoost: 1, returnBoost: 1 };
 
-      // Scale LWBS curve by environment-level disengagement context (HQCA)
-      const lwbsRisk = risk * leaveSignalWeight;
+    for (let t = 0; t <= maxTime; t += 5) {
+      const baselineHazard = this.baselineHazard(
+        t,
+        dto.estimatedCtasLevel,
+        expectedWaitMinutes,
+      );
+      const progress = t / expectedWaitMinutes; // not clipped — extreme waits → extreme progress
+
+      const distressRisk = baselineHazard * profileBoosts.distressBoost;
+      const returnRisk = baselineHazard * profileBoosts.returnBoost;
+
+      // LWBS: baseline floor + escalation; leaveSignalWeight affects slope, not final multiplier
+      const lwbsProbability = this.computeLwbsProbability(
+        progress,
+        baselineLWBS,
+        leaveSignalWeight,
+        profileBoosts.lwbsBoost,
+      );
 
       points.push({
         timeMinutes: t,
-        distressProbability: Math.min(0.95, this.distressCurve(t, risk)),
-        lwbsProbability: Math.min(0.95, this.lwbsCurve(t, lwbsRisk)),
-        returnVisitRisk: Math.min(0.8, this.returnVisitCurve(t, risk)),
+        distressProbability: Math.min(
+          0.95,
+          this.distressCurve(t, distressRisk),
+        ),
+        lwbsProbability,
+        returnVisitRisk: Math.min(0.8, this.returnVisitCurve(t, returnRisk)),
       });
     }
 
-    let burden = this.computeBurdenScore(points, vulnerabilityMultiplier);
+    // Change 6: LWBS weight depends on vulnerability
+    const weights = this.getCurveWeights(vulnScore);
+    let burden = this.computeBurdenScore(points, weights);
 
-    // CIHI-anchored time-based burden (controls the time curve)
-    burden += this.computeBaseWaitingImpact(dto.waitTimeMinutes);
+    burden += this.computeBaseWaitingImpact(
+      dto.waitTimeMinutes,
+      expectedWaitMinutes,
+      dto.estimatedCtasLevel,
+    );
 
-    // LWBS escalation for planning-to-leave (HQCA)
+    // Change 7: Planning-to-leave bump scales with vulnerability
     if (planningToLeave) {
-      burden += 15 * leaveSignalWeight;
+      const leaveBump = vulnScore >= 0.3 ? 15 : 8;
+      burden += leaveBump * leaveSignalWeight;
     }
 
-    // Post-87 min gradual escalation (McMaster reference)
+    const progress = dto.waitTimeMinutes / expectedWaitMinutes;
+    // Post-87 min gradual escalation (McMaster); CTAS 1–2 allow bump at progress 0.3, else 0.4
     burden = this.applyPostMedianPhysicianDelayAdjustment(
       burden,
       dto.waitTimeMinutes,
+      progress,
+      dto.estimatedCtasLevel,
     );
 
-    // Vulnerability scaling (StatsCan-informed weights)
-    burden = burden * (1 + vulnerabilityMultiplier);
+    // Vulnerability applied once (final scaling); cap 0.5 → max 1.5× to avoid inflation
+    const cappedVuln = Math.min(vulnScore, 0.5);
+    burden = burden * (1 + cappedVuln);
     burden = Math.max(0, Math.min(100, burden));
 
     const isPastMedianPhysicianAccess =
@@ -80,13 +122,11 @@ export class BurdenModelingService {
 
     const equityGapScore = this.computeEquityGap(
       points,
-      vulnerabilityMultiplier,
+      profileBoosts.lwbsBoost,
     );
     const alertStatus =
       burden > 75 || planningToLeave ? 'RED' : burden > 50 ? 'AMBER' : 'GREEN';
 
-    const hospital = this.waitTimesService.getHospitalWaitTime(dto.facilityId);
-    const expectedWaitMinutes = hospital?.waitMinutes ?? 238;
     const waitRatio = dto.waitTimeMinutes / expectedWaitMinutes;
 
     const atDisengagementRisk =
@@ -108,11 +148,20 @@ export class BurdenModelingService {
       burden,
       alertStatus,
       disengagementWindowMinutes,
-      baselineCurve: points.map((p) => ({
-        timeMinutes: p.timeMinutes,
-        distressProbability: p.distressProbability / vulnerabilityMultiplier,
-        lwbsProbability: p.lwbsProbability / vulnerabilityMultiplier,
-      })),
+      baselineCurve: points.map((p) => {
+        const prog = p.timeMinutes / expectedWaitMinutes;
+        const baseLwbs = this.computeLwbsProbability(
+          prog,
+          baselineLWBS,
+          leaveSignalWeight,
+          1,
+        );
+        return {
+          timeMinutes: p.timeMinutes,
+          distressProbability: p.distressProbability / profileBoosts.distressBoost,
+          lwbsProbability: baseLwbs,
+        };
+      }),
       confidenceInterval: 0.95,
     };
   }
@@ -159,11 +208,18 @@ export class BurdenModelingService {
     return { estimatedWaitMinutes: clamped };
   }
 
-  /** +0 to +10 gradual bump after 87 min (McMaster triage-matched control median) */
+  /**
+   * +0 to +10 gradual bump after 87 min (McMaster).
+   * CTAS 1–2 (high urgency): allow bump at progress ≥ 0.3. Otherwise ≥ 0.4.
+   */
   private applyPostMedianPhysicianDelayAdjustment(
     burden: number,
     minutesWaited: number,
+    progress: number,
+    ctasLevel: number,
   ): number {
+    const progressThreshold = ctasLevel <= 2 ? 0.3 : 0.4;
+    if (progress < progressThreshold) return burden;
     if (minutesWaited <= MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES)
       return burden;
     const over =
@@ -172,27 +228,108 @@ export class BurdenModelingService {
     return burden + bump;
   }
 
-  /** CIHI-anchored: 0 min → 0, 238 min → ~60, acceleration after 90 min */
-  private computeBaseWaitingImpact(minutesWaited: number): number {
-    const normalized = minutesWaited / MEDIAN_TOTAL_STAY_MINUTES;
-    let impact = Math.min(normalized * 60, 60);
-    if (minutesWaited > MEDIAN_TO_PHYSICIAN_MINUTES) {
-      impact += 8;
+  /**
+   * Change 1–2: Time impact based on progress = waitTime / expectedWaitMinutes.
+   * At progress 1.0 → ~55–65, 1.25 → ~65–75, 1.5+ → ~75–85, cap ~90.
+   * Small bump at 87/90 min only when progress > 0.4.
+   */
+  /**
+   * Time impact based on progress. 90-min bump: CTAS 1–2 allow at progress ≥ 0.3, else ≥ 0.4.
+   */
+  private computeBaseWaitingImpact(
+    minutesWaited: number,
+    expectedWaitMinutes: number,
+    ctasLevel: number,
+  ): number {
+    const progress = minutesWaited / expectedWaitMinutes;
+    const progressThreshold = ctasLevel <= 2 ? 0.3 : 0.4;
+
+    let impact: number;
+    if (progress < 0.4) {
+      impact = progress * 40; // slow increase
+    } else if (progress <= 1.0) {
+      impact = 16 + (progress - 0.4) * 65; // moderate: 0.4→16, 1.0→55
+    } else if (progress <= 1.25) {
+      impact = 55 + (progress - 1.0) * 80; // 1.25→75
+    } else if (progress <= 1.5) {
+      impact = 75 + (progress - 1.25) * 40; // 1.5→85
+    } else {
+      impact = 85 + Math.min(progress - 1.5, 0.5) * 10; // cap ~90
     }
-    return Math.min(impact, 75);
+
+    if (progress >= progressThreshold && minutesWaited > MEDIAN_TO_PHYSICIAN_MINUTES) {
+      impact += 5; // small CIHI-anchored bump at 90 min
+    }
+    return Math.min(impact, 92);
+  }
+
+  /** Weights sum to 100. Low vuln: 45/25/30, high vuln: 25/55/20. */
+  private getCurveWeights(vulnScore: number): {
+    distress: number;
+    lwbs: number;
+    returnVisit: number;
+  } {
+    const low = { distress: 45, lwbs: 25, returnVisit: 30 }; // sum 100
+    const high = { distress: 25, lwbs: 55, returnVisit: 20 }; // sum 100
+    const t = Math.min(1, Math.max(0, vulnScore));
+    return {
+      distress: low.distress + (high.distress - low.distress) * t,
+      lwbs: low.lwbs + (high.lwbs - low.lwbs) * t,
+      returnVisit: low.returnVisit + (high.returnVisit - low.returnVisit) * t,
+    };
+  }
+
+  /** Change 5: Profile-specific boosts — chronicPain→distress, language/cognitive/alone/mobility→LWBS. */
+  private getProfileCurveBoosts(profile: {
+    chronicPain?: boolean;
+    mobility?: boolean;
+    cognitive?: boolean;
+    sensory?: boolean;
+    language?: boolean;
+    alone?: boolean;
+  }): { distressBoost: number; lwbsBoost: number; returnBoost: number } {
+    let distressBoost = 1;
+    if (profile.chronicPain) distressBoost += 0.3;
+
+    let lwbsBoost = 1;
+    if (profile.language) lwbsBoost += 0.2;
+    if (profile.cognitive) lwbsBoost += 0.2;
+    if (profile.alone) lwbsBoost += 0.15;
+    if (profile.mobility) lwbsBoost += 0.2;
+    if (profile.sensory) lwbsBoost += 0.15;
+
+    let returnBoost = 1;
+    if (profile.chronicPain || profile.cognitive) returnBoost += 0.1;
+
+    return { distressBoost, lwbsBoost, returnBoost };
   }
 
   private computeBurdenScore(
     points: BurdenCurvePoint[],
-    vulnerabilityMultiplier: number,
+    weights: { distress: number; lwbs: number; returnVisit: number },
   ): number {
     const lastPoint = points[points.length - 1];
     if (!lastPoint) return 0;
     const base =
-      lastPoint.distressProbability * 30 +
-      lastPoint.lwbsProbability * 40 +
-      lastPoint.returnVisitRisk * 20;
-    return Math.min(100, base * vulnerabilityMultiplier);
+      lastPoint.distressProbability * weights.distress +
+      lastPoint.lwbsProbability * weights.lwbs +
+      lastPoint.returnVisitRisk * weights.returnVisit;
+    return Math.min(100, base);
+  }
+
+  /**
+   * Unknown profile → vulnScore = 0. Frontend passes 1 + vuln (1–2); profile returns 0–0.95.
+   */
+  private normalizeVulnScore(
+    vulnerabilityMultiplier: number | undefined,
+  ): number {
+    if (vulnerabilityMultiplier == null || vulnerabilityMultiplier === undefined) {
+      return 0;
+    }
+    if (vulnerabilityMultiplier >= 1) {
+      return Math.min(1, vulnerabilityMultiplier - 1);
+    }
+    return vulnerabilityMultiplier;
   }
 
   /** Returns 0 → ~0.95 from profile flags (StatsCan-informed weights) */
@@ -215,17 +352,48 @@ export class BurdenModelingService {
     return totalWeight;
   }
 
-  private baselineHazard(timeMinutes: number, ctasLevel: number): number {
+  /**
+   * Smooth saturating curve: gentle early, ramps around progress ≈ 1.0,
+   * increases beyond 1.0, saturates (monotonic, anchored).
+   * Uses softened exponential: 1 - exp(-k*progress).
+   */
+  private baselineHazard(
+    timeMinutes: number,
+    ctasLevel: number,
+    expectedWaitMinutes: number,
+  ): number {
     const urgencyFactor = 6 - ctasLevel; // CTAS 1 = highest urgency
-    return 0.001 * Math.exp(0.02 * timeMinutes) * urgencyFactor;
+    const progress = timeMinutes / expectedWaitMinutes;
+    const k = 1.2; // ramp rate; at progress 1 → ~0.70, at 2 → ~0.91. Reduce if too hot.
+    const softFactor = 1 - Math.exp(-k * progress);
+    return 0.003 * Math.max(0.05, softFactor) * urgencyFactor;
   }
 
   private distressCurve(timeMinutes: number, risk: number): number {
     return 1 - Math.exp(-risk * timeMinutes * 0.01);
   }
 
-  private lwbsCurve(timeMinutes: number, risk: number): number {
-    return 1 - Math.exp(-risk * timeMinutes * 0.008);
+  /**
+   * LWBS: baseline floor + escalation. No double-counting of baseline.
+   * raw = baselineLWBS + g * (1 - baselineLWBS), g = clamp01(f * profileLwbsBoost).
+   * rampFactor from baselineLWBS only (0.8–1.3); not leaveSignalWeight.
+   */
+  private computeLwbsProbability(
+    progress: number,
+    baselineLWBS: number,
+    _leaveSignalWeight: number,
+    profileLwbsBoost: number,
+  ): number {
+    const k = 1.2;
+    const rampFactor = Math.min(
+      1.3,
+      Math.max(0.8, 0.8 + 0.5 * (baselineLWBS / 0.15)),
+    ); // low→0.8, high(15%+)→1.3
+    const kEff = k * rampFactor;
+    const f = 1 - Math.exp(-kEff * progress);
+    const g = Math.min(1, Math.max(0, f * profileLwbsBoost));
+    const raw = baselineLWBS + g * (1 - baselineLWBS);
+    return Math.min(0.85, raw);
   }
 
   private returnVisitCurve(timeMinutes: number, risk: number): number {
@@ -234,11 +402,10 @@ export class BurdenModelingService {
 
   private computeEquityGap(
     points: BurdenCurvePoint[],
-    vulnerabilityMultiplier: number,
+    baselineLwbs: number,
   ): number {
     const lastPoint = points[points.length - 1];
     if (!lastPoint) return 0;
-    const baselineLwbs = lastPoint.lwbsProbability / vulnerabilityMultiplier;
     return lastPoint.lwbsProbability - baselineLwbs;
   }
 }

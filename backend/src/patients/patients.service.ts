@@ -19,13 +19,13 @@ export interface StoredPatient {
     timestamp: number;
   }>;
   missedCheckIn?: boolean;
+  /** When staff last recorded a check-in with this patient (ms). */
+  lastStaffCheckInAt?: number;
   assignedHospitalKey: string;
   estimatedCtasLevel?: number;
   discomfortLevel?: number;
   disengagementWindowMinutes?: number;
 }
-
-const CHECK_IN_INTERVAL_MS = 20 * 60 * 1000;
 
 @Injectable()
 export class PatientsService {
@@ -63,7 +63,20 @@ export class PatientsService {
     return this.patients.get(id);
   }
 
-  /** Append a check-in to the patient and update missedCheckIn. */
+  /** Record that staff checked in with the patient. */
+  recordStaffCheckIn(id: string): StoredPatient | undefined {
+    const patient = this.patients.get(id);
+    if (!patient) return undefined;
+    patient.lastStaffCheckInAt = Date.now();
+    patient.missedCheckIn = false;
+    return patient;
+  }
+
+  /** Remove patient from queue (sent to doctor / off queue). */
+  remove(id: string): boolean {
+    return this.patients.delete(id);
+  }
+
   addCheckIn(dto: CheckInDto): StoredPatient | undefined {
     const patient = this.patients.get(dto.passportId);
     if (!patient) return undefined;
@@ -77,9 +90,7 @@ export class PatientsService {
       timestamp: dto.timestamp ? new Date(dto.timestamp).getTime() : Date.now(),
     };
     patient.checkIns.push(checkIn);
-    const now = Date.now();
-    const lastTs = patient.checkIns[patient.checkIns.length - 1].timestamp;
-    patient.missedCheckIn = now - lastTs > CHECK_IN_INTERVAL_MS;
+    patient.missedCheckIn = false;
 
     return patient;
   }
