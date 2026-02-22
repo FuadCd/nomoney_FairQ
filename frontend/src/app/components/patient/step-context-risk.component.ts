@@ -85,6 +85,8 @@ export interface ContextRiskResult {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
         gap: 0.5rem;
+        min-width: 0;
+        overflow: auto;
       }
       @media (max-width: 480px) {
         .discomfort-grid { grid-template-columns: repeat(5, 1fr); gap: 0.25rem; }
@@ -105,9 +107,19 @@ export interface ContextRiskResult {
         color: var(--p-fg, #1a1a1a);
         cursor: pointer;
         transition: border-color 0.15s, background 0.15s;
+        overflow: auto;
+        min-width: 0;
       }
-      .discomfort-num { font-size: 1.5rem; font-weight: 700; display: block; }
-      .discomfort-label { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; }
+      .discomfort-num { font-size: 1.5rem; font-weight: 700; display: block; flex-shrink: 0; }
+      .discomfort-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        text-align: center;
+        overflow: auto;
+      }
       .discomfort-btn.selected,
       .discomfort-btn:hover {
         border-color: #2563eb;

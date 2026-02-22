@@ -159,8 +159,8 @@ export class WaitingComponent implements OnInit {
     return `${m} min`;
   }
 
-  /** Back: previous in session sequence is Intake step 3 (confirm). */
+  /** Back: after check-in, return to home. */
   back(): void {
-    this.router.navigate(['/patient/intake/3']);
+    this.router.navigate(['/']);
   }
 }

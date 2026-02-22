@@ -47,9 +47,9 @@ export class CheckinComponent {
   private readonly store = inject(PatientStoreService);
   readonly i18n = inject(I18nService);
 
-  /** Back: previous in session sequence is Waiting. */
+  /** Back: after check-in flow, return to home. */
   back(): void {
-    this.router.navigate(['/patient/waiting']);
+    this.router.navigate(['/']);
   }
 
   onComplete(result: CheckInFormResult): void {

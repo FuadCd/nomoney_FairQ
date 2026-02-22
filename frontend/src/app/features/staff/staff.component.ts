@@ -34,27 +34,16 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
                   <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                 </svg>
                 <div>
-                  <h1 class="text-2xl font-bold text-gray-900">Staff Dashboard</h1>
-                  <p class="text-sm text-gray-600">Equity-adjusted waiting burden — who is silently deteriorating?</p>
+                  @if (hospitalName()) {
+                    <h1 class="text-2xl font-bold text-gray-900">{{ hospitalName() }}</h1>
+                  } @else {
+                    <h1 class="text-2xl font-bold text-gray-900">Staff Dashboard</h1>
+                  }
+                  <p class="text-sm text-gray-600 mt-0.5">Staff Dashboard</p>
                 </div>
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <span class="text-sm text-gray-600">Simulated time</span>
-              <button
-                type="button"
-                (click)="add15Minutes()"
-                class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
-              >
-                Add +15 min
-              </button>
-              <button
-                type="button"
-                (click)="resetTime()"
-                class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
-              >
-                Reset time
-              </button>
               <button
                 type="button"
                 (click)="goToAdmin()"
@@ -243,9 +232,14 @@ export class StaffComponent implements OnInit {
   private burdenUpdater = inject(BurdenUpdaterService);
 
   patients$ = this.store.getPatients();
+
+  constructor() {
+    this.hospitalName.set(this.auth.getStaffHospitalName());
+  }
   criticalAlertsCount = signal(0);
   warningAlertsCount = signal(0);
   greenCount = signal(0);
+  hospitalName = signal<string | null>(null);
 
   ngOnInit(): void {
     this.patients$.subscribe(patients => {

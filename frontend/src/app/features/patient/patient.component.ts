@@ -28,11 +28,11 @@ const EN: Record<string, string> = {
   hospitalPlaceholder: 'Select a hospital',
   hospitalHint: 'This helps us show you the right wait times and support options.',
   discomfortQuestion: 'How uncomfortable are you right now?',
-  discomfort1: '1 – Minimal',
-  discomfort2: '2 – Mild',
-  discomfort3: '3 – Moderate',
-  discomfort4: '4 – Severe',
-  discomfort5: '5 – Emergency',
+  discomfort1: 'Minimal',
+  discomfort2: 'Mild',
+  discomfort3: 'Moderate',
+  discomfort4: 'Severe',
+  discomfort5: 'Emergency',
   leavingQuestion: 'Are you thinking about leaving before being seen?',
   leavingHint: 'Your answer helps us prioritize support.',
   continue: 'Continue',
@@ -46,11 +46,11 @@ const EN: Record<string, string> = {
   complaintQuestion: 'What brings you in today?',
   complaintPlaceholder: 'Describe what brings you in today',
   severityQuestion: 'How much discomfort are you feeling?',
-  severity1: '1 – Minimal',
-  severity2: '2 – Mild',
-  severity3: '3 – Moderate',
-  severity4: '4 – Severe',
-  severity5: '5 – Emergency',
+  severity1: 'Minimal',
+  severity2: 'Mild',
+  severity3: 'Moderate',
+  severity4: 'Severe',
+  severity5: 'Emergency',
   accessibilityIntro: "Let's make your visit comfortable.",
   catMobility: 'Mobility',
   q_mobility: 'Do you use a wheelchair or walking aid?',
@@ -112,11 +112,11 @@ const FR: Record<string, string> = {
   hospitalHint: 'Cela nous aide à afficher les temps d’attente et les options de soutien.',
   hospitalPlaceholder: 'Choisir un hôpital',
   discomfortQuestion: "Quel est votre niveau d'inconfort en ce moment?",
-  discomfort1: '1 – Minimal',
-  discomfort2: '2 – Léger',
-  discomfort3: '3 – Modéré',
-  discomfort4: '4 – Sévère',
-  discomfort5: '5 – Urgence',
+  discomfort1: 'Minimal',
+  discomfort2: 'Léger',
+  discomfort3: 'Modéré',
+  discomfort4: 'Sévère',
+  discomfort5: 'Urgence',
   leavingQuestion: "Pensez-vous partir avant d'être vu par un médecin?",
   leavingHint: 'Votre réponse nous aide à prioriser le soutien.',
   continue: 'Continuer',
@@ -130,11 +130,11 @@ const FR: Record<string, string> = {
   complaintQuestion: "Qu'est-ce qui vous amène aujourd'hui ?",
   complaintPlaceholder: "Décrivez ce qui vous amène aujourd'hui",
   severityQuestion: "Quel est votre niveau d'inconfort ?",
-  severity1: '1 – Minimal',
-  severity2: '2 – Léger',
-  severity3: '3 – Modéré',
-  severity4: '4 – Sévère',
-  severity5: '5 – Urgence',
+  severity1: 'Minimal',
+  severity2: 'Léger',
+  severity3: 'Modéré',
+  severity4: 'Sévère',
+  severity5: 'Urgence',
   accessibilityIntro: 'Rendons votre visite confortable.',
   catMobility: 'Mobilité',
   q_mobility: 'Utilisez-vous un fauteuil roulant ou une aide à la marche ?',
@@ -349,11 +349,13 @@ export class A11yModeService {
         --p-red: #c62828;
         --p-light-accent: #e3f2fd;
         min-height: 100vh;
+        height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
         background: var(--p-bg);
         color: var(--p-fg);
+        overflow: hidden;
         transition:
           background 0.2s,
           color 0.2s;
@@ -408,29 +410,48 @@ export class A11yModeService {
         width: 34px;
         height: 34px;
         border-radius: 8px;
-        border: 2px solid rgba(255, 255, 255, 0.5);
-        background: transparent;
-        color: white;
+        border: 2px solid #d1d5db;
+        background: white;
+        color: #374151;
         font-size: 0.75rem;
         font-weight: 700;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background 0.15s;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .toggle-btn:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+        color: #1f2937;
       }
       .toggle-btn.lang {
         font-size: 0.7rem;
         width: 30px;
       }
       .toggle-btn.on {
-        background: rgba(255, 255, 255, 0.25);
-        border-color: white;
+        background: #eff6ff;
+        border-color: #2563eb;
+        color: #2563eb;
+      }
+      .patient-layout.hc .toggle-btn {
+        border-color: var(--p-border);
+        background: transparent;
+        color: var(--p-fg);
+      }
+      .patient-layout.hc .toggle-btn.on {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: var(--p-accent);
+        color: var(--p-accent);
       }
       .content {
         width: 100%;
         max-width: 672px;
         flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
         padding: 1rem 1rem 2rem;
       }
     `,
