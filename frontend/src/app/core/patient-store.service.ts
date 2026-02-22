@@ -142,12 +142,7 @@ export class PatientStoreService {
     patient.alertLevel = alertStatus.toLowerCase() as AlertLevel;
     patient.disengagementWindowMinutes = disengagementWindowMinutes;
 
-    if (patient.checkIns.length > 0) {
-      const lastTs = patient.checkIns[patient.checkIns.length - 1].timestamp;
-      patient.missedCheckIn = now - lastTs > CHECK_IN_INTERVAL_MS;
-    } else {
-      patient.missedCheckIn = false;
-    }
+    patient.missedCheckIn = false;
 
     if (curve?.length) this.burdenCurves.set(patientId, curve);
     this.log('setBurdenFromBackend', { patientId, burdenIndex: patient.burdenIndex, alertLevel: patient.alertLevel });
@@ -183,13 +178,7 @@ export class PatientStoreService {
     patient.burdenIndex = Math.min(burden, 100);
     patient.alertLevel = this.computeAlertLevel(patient);
 
-    // Missed check-in detection: last check-in older than CHECK_IN_INTERVAL_MS
-    if (patient.checkIns.length > 0) {
-      const lastTs = patient.checkIns[patient.checkIns.length - 1].timestamp;
-      patient.missedCheckIn = now - lastTs > CHECK_IN_INTERVAL_MS;
-    } else {
-      patient.missedCheckIn = false;
-    }
+    patient.missedCheckIn = false;
 
     this.log('updateBurden', {
       patientId,

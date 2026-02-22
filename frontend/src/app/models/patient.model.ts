@@ -39,6 +39,8 @@ export interface Patient {
   checkIns: CheckIn[];
   /** True when last check-in was more than CHECK_IN_INTERVAL_MS ago. */
   missedCheckIn?: boolean;
+  /** When staff last recorded a check-in with this patient (ms). */
+  lastStaffCheckInAt?: number;
   /** Hospital key for backend burden (e.g. uofa). Set from intake or default. */
   assignedHospitalKey?: string;
   /** CTAS level 1–5 for backend burden (1 = most urgent). From intake discomfort 1–5. */

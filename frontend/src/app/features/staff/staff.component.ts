@@ -161,11 +161,6 @@ const SYNC_INTERVAL_MS = 3000;
                           >
                             {{ alertLabel(p.alertLevel).toUpperCase() }}
                           </span>
-                          @if (p.missedCheckIn) {
-                            <span class="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300">
-                              Missed Check-in
-                            </span>
-                          }
                         </div>
                       </div>
 
@@ -207,7 +202,7 @@ const SYNC_INTERVAL_MS = 3000;
                       @if (getLatestCheckIn(p); as last) {
                         <div class="checkin-card mb-4 p-3 rounded-lg border border-blue-200 bg-blue-50/50">
                           <p class="text-xs font-semibold text-blue-800 mb-2 flex items-center gap-1">
-                            <span>📋</span> Latest check-in {{ formatCheckInTime(last.timestamp) }}
+                            <span>📋</span> {{ isNewCheckIn(last.timestamp) ? 'New check-in' : 'Latest check-in' }} {{ formatCheckInTime(last.timestamp) }}
                           </p>
                           <div class="space-y-1.5 text-sm">
                             <p><span class="font-medium">Feeling:</span> {{ getDiscomfortLabel(last.discomfort) }} {{ getDiscomfortEmoji(last.discomfort) }}</p>
@@ -376,7 +371,7 @@ export class StaffComponent implements OnInit, OnDestroy {
 
   isNewCheckIn(timestamp: number): boolean {
     const now = this.store.getCurrentTime();
-    return (now - timestamp) < 2 * 60 * 1000; // within 2 min
+    return (now - timestamp) < 5 * 60 * 1000; // within 5 min
   }
 
   formatCheckInTime(timestamp: number): string {
@@ -430,7 +425,10 @@ export class StaffComponent implements OnInit, OnDestroy {
   }
 
   /** LWBS risk at patient's current wait time (0–100), or null if no curve. */
+  /** Returns 80% when patient indicated "Thinking of leaving". */
   getLwbsRiskPercent(p: Patient): number | null {
+    const planningToLeave = p.checkIns.some((c) => c.planningToLeave);
+    if (planningToLeave) return 80;
     const curve = this.store.getBurdenCurve(p.id);
     if (!curve?.length) return null;
     const waitMin = this.getMinutesWaited(p);
@@ -491,6 +489,15 @@ export class StaffComponent implements OnInit, OnDestroy {
   resetTime(): void {
     this.store.clearDemoTime();
     this.burdenUpdater.refreshAll();
+  }
+
+  staffCheckedIn(p: Patient): void {
+    this.patientsApi.staffCheckIn(p.id).subscribe({
+      next: (updated) => {
+        if (updated) this.store.updatePatient(updated);
+      },
+      error: () => {},
+    });
   }
 
   sentToDoctor(p: Patient): void {

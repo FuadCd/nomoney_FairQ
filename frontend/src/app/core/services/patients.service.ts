@@ -24,6 +24,14 @@ export class PatientsService {
     );
   }
 
+  /** Record that staff checked in with the patient. */
+  staffCheckIn(patientId: string): Observable<Patient | null> {
+    return this.api.post<Patient | null>(
+      `/patients/${encodeURIComponent(patientId)}/staff-checkin`,
+      {},
+    );
+  }
+
   /** Remove patient from queue (sent to doctor / off queue). */
   remove(patientId: string): Observable<{ ok: boolean }> {
     return this.api.delete<{ ok: boolean }>(`/patients/${encodeURIComponent(patientId)}`);
