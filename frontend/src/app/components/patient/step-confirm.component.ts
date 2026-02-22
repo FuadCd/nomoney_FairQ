@@ -38,7 +38,6 @@ const VULN_WEIGHTS: Record<keyof IntakeAccessibilityProfile, number> = {
         class="confirm-btn"
         (click)="onConfirm()"
         [disabled]="loading()"
-        [attr.aria-label]="i18n.t('confirmButton')"
         [attr.aria-busy]="loading()"
       >
         @if (loading()) {

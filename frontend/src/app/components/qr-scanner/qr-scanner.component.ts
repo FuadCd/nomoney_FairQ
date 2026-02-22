@@ -42,11 +42,11 @@ function parseIntakeUrl(decodedText: string): { path: string; query: string } | 
             type="button"
             class="qr-scanner-close"
             (click)="close()"
-            aria-label="Close"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
+            <span>Close</span>
           </button>
         </div>
         <div class="qr-scanner-body">
@@ -99,11 +99,16 @@ function parseIntakeUrl(decodedText: string): { path: string; query: string } | 
         position: absolute;
         top: 1rem;
         right: 1rem;
-        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        min-height: 44px;
         background: transparent;
         border: none;
         cursor: pointer;
         color: #6b7280;
+        font-size: 1rem;
         border-radius: 0.375rem;
       }
       .qr-scanner-close:hover {

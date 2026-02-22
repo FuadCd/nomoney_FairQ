@@ -13,30 +13,32 @@ interface ToggleItem {
   selector: 'app-step-accessibility-toggles',
   standalone: true,
   template: `
-    <div class="step" role="group" aria-labelledby="accessibility-step-title">
-      <h2 id="accessibility-step-title" class="title">{{ i18n.t('accessibilityTitle') }}</h2>
-      <p class="subtitle">{{ i18n.t('accessibilitySubtitle') }}</p>
-      <div class="accessibility-buttons">
-        @for (item of toggles; track item.key) {
-          <button
-            type="button"
-            class="access-btn"
-            [class.selected]="profile()[item.key]"
-            (click)="toggle(item.key)"
-            [attr.aria-label]="i18n.t(item.i18nKey)"
-            [attr.aria-pressed]="profile()[item.key]"
-          >
-            <span class="access-icon">{{ item.icon }}</span>
-            {{ i18n.t(item.i18nKey) }}
-          </button>
-        }
-      </div>
-      <button
-        type="button"
-        class="next-btn"
-        (click)="submit()"
-        aria-label="Continue"
-      >
+    <div class="step">
+      <fieldset class="access-fieldset">
+        <legend class="access-legend">{{ i18n.t('accessibilityTitle') }}</legend>
+        <p class="subtitle">{{ i18n.t('accessibilitySubtitle') }}</p>
+        <div class="accessibility-options">
+          @for (item of toggles; track item.key) {
+            <div class="access-option">
+              <input
+                type="checkbox"
+                [id]="'acc-' + item.key"
+                [checked]="profile()[item.key]"
+                (change)="toggle(item.key)"
+                class="access-checkbox"
+              />
+              <label [for]="'acc-' + item.key" class="access-label">
+                <span class="access-icon" aria-hidden="true">{{ item.icon }}</span>
+                <span class="access-text">{{ i18n.t(item.i18nKey) }}</span>
+                @if (profile()[item.key]) {
+                  <span class="access-checkmark" aria-hidden="true">✓</span>
+                }
+              </label>
+            </div>
+          }
+        </div>
+      </fieldset>
+      <button type="button" class="next-btn" (click)="submit()">
         {{ i18n.t('continue') }}
       </button>
     </div>
@@ -48,23 +50,47 @@ interface ToggleItem {
         flex-direction: column;
         gap: 1.25rem;
       }
-      .title {
+      .access-fieldset {
+        border: none;
+        margin: 0;
+        padding: 0;
+      }
+      .access-legend {
         font-size: 1.25rem;
         font-weight: 600;
         color: var(--p-fg, #1a1a1a);
-        margin: 0;
+        margin: 0 0 0.25rem;
       }
       .subtitle {
         font-size: 0.875rem;
         color: #6b7280;
-        margin: -0.5rem 0 0;
+        margin: 0 0 0.75rem;
       }
-      .accessibility-buttons {
+      .accessibility-options {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
       }
-      .access-btn {
+      .access-option {
+        position: relative;
+        min-height: 56px;
+      }
+      .access-checkbox {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        cursor: pointer;
+      }
+      .access-checkbox:focus-visible + .access-label {
+        outline: 3px solid var(--p-accent, #2563eb);
+        outline-offset: 2px;
+      }
+      .access-label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
         width: 100%;
         min-height: 56px;
         padding: 0.75rem 1rem;
@@ -76,19 +102,30 @@ interface ToggleItem {
         background: var(--p-card-bg, white);
         color: var(--p-fg, #1a1a1a);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
         transition: border-color 0.15s, background 0.15s;
+        box-sizing: border-box;
       }
-      .access-btn.selected {
+      .access-checkbox:checked + .access-label {
         border-color: #2563eb;
         background: #eff6ff;
-        color: #2563eb;
+        color: #1a1a1a;
+      }
+      .access-label:hover {
+        border-color: #2563eb;
+        background: #eff6ff;
       }
       .access-icon {
         font-size: 1.4rem;
         flex-shrink: 0;
+      }
+      .access-text {
+        flex: 1;
+      }
+      .access-checkmark {
+        flex-shrink: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2563eb;
       }
       .next-btn {
         width: 100%;
