@@ -10,109 +10,104 @@ import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-min
   standalone: true,
   imports: [RouterLink],
   template: `
-    <div class="waiting fade-in">
-      <button type="button" class="back-link back-btn" (click)="back()">&larr; Back</button>
-      <div class="check-icon">✅</div>
-      <h2>{{ i18n.t('waitingTitle') }}</h2>
-      <p class="pid">
-        {{ i18n.t('patientId') }}: <strong>{{ patientId() }}</strong>
-      </p>
-      <p class="time">
-        @if (estimatedWaitFormatted(); as formatted) {
-          {{ i18n.t('waitingTimeLabel') }}: {{ formatted }}
-        } @else {
-          {{ i18n.t('waitingTime') }}
-        }
-      </p>
-      <p class="message">{{ i18n.t('waitingMessage') }}</p>
-      <a class="checkin-link" routerLink="/patient/checkin" aria-label="Go to check-in">
-        {{ i18n.t('checkinTitle') }}
-      </a>
+    <div class="waiting fade-in p-4">
+      <button type="button" class="back-link back-btn mb-6" (click)="back()">&larr; Back</button>
+      <div class="waiting-card">
+        <div class="check-confirm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <h2>{{ i18n.t('waitingTitle') }}</h2>
+          <p class="message">{{ i18n.t('waitingMessage') }}</p>
+        </div>
+        <div class="pid-box">
+          <span class="pid-label">{{ i18n.t('patientId') }}</span>
+          <span class="pid-value">{{ patientId() }}</span>
+        </div>
+      </div>
+      <div class="wait-time-card">
+        <h3 class="wait-time-title">{{ i18n.t('waitingTimeLabel') }}</h3>
+        <p class="time">
+          @if (estimatedWaitFormatted(); as formatted) {
+            {{ formatted }}
+          } @else {
+            ~15 min
+          }
+        </p>
+      </div>
+      <div class="checkin-card">
+        <p class="checkin-reminder">We'll check in with you every 20 minutes. Update your status to help us support you.</p>
+        <a class="checkin-link" routerLink="/patient/checkin" aria-label="Go to check-in">
+          {{ i18n.t('checkinTitle') }}
+        </a>
+      </div>
     </div>
   `,
   styles: [
     `
-      .waiting {
-        text-align: center;
-        padding: 2rem 0.5rem;
-      }
+      .waiting { max-width: 672px; margin: 0 auto; }
       .back-link {
-        display: block;
-        text-align: left;
-        margin-bottom: 1rem;
-        color: var(--p-accent, #0d47a1);
+        display: inline-block;
+        color: var(--p-accent, #2563eb);
         text-decoration: none;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
       }
-      .back-link:hover {
-        text-decoration: underline;
-      }
-      .back-btn {
-        background: none;
-        border: none;
-        padding: 0;
-        font: inherit;
-        cursor: pointer;
-      }
-      .fade-in {
-        animation: fadeSlide 0.3s ease-out;
-      }
+      .back-link:hover { text-decoration: underline; }
+      .back-btn { background: none; border: none; padding: 0; font: inherit; cursor: pointer; }
+      .fade-in { animation: fadeSlide 0.3s ease-out; }
       @keyframes fadeSlide {
-        from {
-          opacity: 0;
-          transform: translateY(16px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      .check-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
+      .waiting-card {
+        background: #f0fdf4;
+        border: 2px solid #bbf7d0;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
       }
-      h2 {
-        font-size: 1.5rem;
-        color: var(--p-green, #2e7d32);
-        margin: 0 0 0.75rem;
+      .check-confirm { margin-bottom: 1rem; }
+      .check-icon { width: 2rem; height: 2rem; color: #16a34a; margin-bottom: 0.5rem; }
+      .waiting-card h2 { font-size: 1.25rem; font-weight: 700; color: #166534; margin: 0 0 0.25rem; }
+      .waiting-card .message { font-size: 0.875rem; color: #15803d; margin: 0; }
+      .pid-box {
+        background: white;
+        border: 1px solid #bbf7d0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
       }
-      .pid {
-        font-size: 0.95rem;
-        color: var(--p-accent, #0d47a1);
-        background: var(--p-light-accent, #e3f2fd);
-        display: inline-block;
-        padding: 0.4rem 1rem;
-        border-radius: 8px;
-        margin: 0 0 1rem;
-        letter-spacing: 1px;
+      .pid-label { font-size: 0.875rem; color: #6b7280; display: block; }
+      .pid-value { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.05em; color: #1a1a1a; }
+      .wait-time-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
       }
-      .time {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--p-fg, #1a1a1a);
-        margin: 0 0 0.5rem;
+      .wait-time-title { font-size: 0.875rem; color: #6b7280; margin: 0 0 0.5rem; }
+      .time { font-size: 1.875rem; font-weight: 700; color: #1a1a1a; margin: 0; }
+      .checkin-card {
+        background: white;
+        border: 2px solid #bfdbfe;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        text-align: center;
       }
-      .message {
-        font-size: 1.1rem;
-        color: var(--p-muted, #555);
-        margin: 0 0 1.5rem;
-      }
+      .checkin-reminder { font-size: 0.875rem; color: #6b7280; margin: 0 0 1rem; }
       .checkin-link {
-        display: inline-block;
-        padding: 0.75rem 2rem;
-        background: var(--p-accent, #0d47a1);
-        color: var(--p-accent-fg, white);
-        border-radius: 12px;
+        display: block;
+        padding: 0.75rem 1.5rem;
+        background: #2563eb;
+        color: white;
+        border-radius: 0.5rem;
         text-decoration: none;
         font-weight: 600;
         font-size: 1rem;
-        min-height: 48px;
-        line-height: 48px;
         transition: background 0.15s;
       }
-      .checkin-link:active {
-        opacity: 0.85;
-      }
+      .checkin-link:hover { background: #1d4ed8; }
     `,
   ],
 })

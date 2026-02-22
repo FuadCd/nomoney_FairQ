@@ -59,15 +59,19 @@ interface ToggleItem {
         display: flex;
         align-items: flex-start;
         gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        border: 2px solid var(--p-border, #bbb);
-        border-radius: 12px;
+        padding: 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
         background: var(--p-card-bg, white);
         cursor: pointer;
-        transition: border-color 0.15s;
+        transition: border-color 0.15s, background 0.15s;
       }
       .toggle-row:hover {
-        border-color: var(--p-accent, #0d47a1);
+        border-color: #93c5fd;
+      }
+      .toggle-row:has(input:checked) {
+        border-color: #2563eb;
+        background: #eff6ff;
       }
       .toggle-row input[type='checkbox'] {
         width: 22px;

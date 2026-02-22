@@ -283,7 +283,12 @@ export class A11yModeService {
     <div class="patient-layout" [class.hc]="a11y.highContrast()">
       <header class="header">
         <div class="header-top">
-          <h1>AccessER</h1>
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="header-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <h1>AccessER</h1>
+          </div>
           <div class="a11y-toggles">
             <button
               class="toggle-btn lang"
@@ -332,7 +337,7 @@ export class A11yModeService {
   styles: [
     `
       .patient-layout {
-        --p-bg: #f5f7fa;
+        --p-bg: #f9fafb;
         --p-fg: #1a1a1a;
         --p-card-bg: white;
         --p-accent: #0d47a1;
@@ -368,10 +373,12 @@ export class A11yModeService {
       }
       .header {
         width: 100%;
-        max-width: 480px;
+        max-width: 672px;
         padding: 0.75rem 1rem;
-        background: #0d47a1;
-        color: white;
+        background: white;
+        color: var(--p-fg);
+        border-bottom: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       }
       .patient-layout.hc .header {
         background: #111;
@@ -382,9 +389,13 @@ export class A11yModeService {
         align-items: center;
         justify-content: space-between;
       }
+      .header-top .flex { display: flex; align-items: center; gap: 0.5rem; }
+      .header-icon { width: 1.5rem; height: 1.5rem; color: #2563eb; }
+      .patient-layout.hc .header-icon { color: var(--p-accent); }
       .header h1 {
         margin: 0;
         font-size: 1.3rem;
+        font-weight: 700;
         letter-spacing: 0.5px;
       }
       .a11y-toggles {
@@ -418,7 +429,7 @@ export class A11yModeService {
       }
       .content {
         width: 100%;
-        max-width: 480px;
+        max-width: 672px;
         flex: 1;
         padding: 1rem 1rem 2rem;
       }

@@ -8,99 +8,56 @@ import { AuthService } from '../../core/auth/auth.service';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div class="landing">
-      <div class="card">
-        <h1>AccessER</h1>
-        <p class="tagline">Accessibility-Adjusted Emergency Room Burden</p>
+    <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div class="w-full max-w-md">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <div class="flex items-center justify-center gap-2 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <h1 class="text-2xl font-bold text-gray-900">AccessER</h1>
+          </div>
+          <p class="text-sm text-gray-600 text-center mb-6">Accessibility-Adjusted Emergency Room Burden</p>
 
-        <div class="staff-entry">
-          <input
-            id="hospital-code"
-            type="text"
-            [(ngModel)]="hospitalCode"
-            placeholder="Hospital Code"
-            aria-label="Hospital code"
-            (keydown.enter)="submitCode()"
-          />
-          <button type="button" class="btn-primary" (click)="submitCode()">
-            Staff access
+          <div class="space-y-3">
+            <input
+              id="hospital-code"
+              type="text"
+              [(ngModel)]="hospitalCode"
+              placeholder="Hospital Code"
+              aria-label="Hospital code"
+              (keydown.enter)="submitCode()"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <button
+              type="button"
+              (click)="submitCode()"
+              class="w-full px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Staff access
+            </button>
+            @if (codeError) {
+              <p class="text-sm text-red-600">{{ codeError }}</p>
+            }
+          </div>
+
+          <div class="flex items-center gap-4 my-6">
+            <span class="flex-1 h-px bg-gray-200"></span>
+            <span class="text-sm text-gray-500">or</span>
+            <span class="flex-1 h-px bg-gray-200"></span>
+          </div>
+
+          <button
+            type="button"
+            (click)="goAsPatient()"
+            class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-colors"
+          >
+            I'm a patient
           </button>
-          @if (codeError) {
-            <p class="error">{{ codeError }}</p>
-          }
         </div>
-
-        <div class="divider">
-          <span>or</span>
-        </div>
-
-        <button type="button" class="btn-patient" (click)="goAsPatient()">
-          I'm a patient
-        </button>
       </div>
     </div>
   `,
-  styles: [`
-    .landing {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
-      padding: 1rem;
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    }
-    .card h1 { margin: 0 0 0.25rem; font-size: 1.75rem; color: #0d47a1; }
-    .tagline { margin: 0 0 1.5rem; color: #666; font-size: 0.9rem; }
-    .staff-entry { display: flex; flex-direction: column; gap: 0.5rem; }
-    .staff-entry label { font-size: 0.85rem; font-weight: 600; color: #333; }
-    .staff-entry input {
-      padding: 0.6rem 0.75rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
-    }
-    .staff-entry input:focus {
-      outline: none;
-      border-color: #1565c0;
-      box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
-    }
-    .btn-primary {
-      padding: 0.6rem 1rem;
-      background: #1565c0;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-primary:hover { background: #0d47a1; }
-    .error { margin: 0.25rem 0 0; color: #c62828; font-size: 0.85rem; }
-    .divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #ddd; }
-    .divider span { color: #888; font-size: 0.85rem; }
-    .btn-patient {
-      display: block;
-      width: 100%;
-      padding: 0.75rem 1rem;
-      background: #2e7d32;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-patient:hover { background: #1b5e20; }
-  `],
 })
 export class LandingComponent {
   private router = inject(Router);

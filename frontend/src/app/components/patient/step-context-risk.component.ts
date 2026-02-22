@@ -27,7 +27,7 @@ export interface ContextRiskResult {
       </select>
 
       <h2 class="question">{{ i18n.t('discomfortQuestion') }}</h2>
-      <div class="discomfort-buttons">
+      <div class="discomfort-grid">
         @for (level of discomfortLevels; track level.value) {
           <button
             type="button"
@@ -36,7 +36,8 @@ export interface ContextRiskResult {
             [class.selected]="discomfortLevel() === level.value"
             [attr.aria-label]="'Discomfort ' + level.value"
           >
-            {{ i18n.t('discomfort' + level.value) }}
+            <span class="discomfort-num">{{ level.value }}</span>
+            <span class="discomfort-label">{{ i18n.t('discomfort' + level.value) }}</span>
           </button>
         }
       </div>
@@ -80,29 +81,38 @@ export interface ContextRiskResult {
         outline: none;
         border-color: var(--p-accent, #0d47a1);
       }
-      .discomfort-buttons {
-        display: flex;
-        flex-direction: column;
+      .discomfort-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
         gap: 0.5rem;
       }
+      @media (max-width: 480px) {
+        .discomfort-grid { grid-template-columns: repeat(5, 1fr); gap: 0.25rem; }
+        .discomfort-btn { min-height: 64px; padding: 0.5rem 0.25rem; }
+        .discomfort-num { font-size: 1.25rem; }
+        .discomfort-label { font-size: 0.65rem; }
+      }
       .discomfort-btn {
-        width: 100%;
-        min-height: 56px;
-        padding: 0.75rem 1rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border: 2px solid var(--p-border, #bbb);
-        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80px;
+        padding: 0.75rem 0.5rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
         background: var(--p-card-bg, white);
         color: var(--p-fg, #1a1a1a);
         cursor: pointer;
         transition: border-color 0.15s, background 0.15s;
       }
+      .discomfort-num { font-size: 1.5rem; font-weight: 700; display: block; }
+      .discomfort-label { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; }
       .discomfort-btn.selected,
       .discomfort-btn:hover {
-        border-color: var(--p-accent, #0d47a1);
-        background: var(--p-light-accent, #e3f2fd);
-        color: var(--p-accent, #0d47a1);
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #2563eb;
       }
       .next-btn {
         width: 100%;

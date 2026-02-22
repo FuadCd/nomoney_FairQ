@@ -53,6 +53,7 @@
               }
             ],
             "styles": [
+              "src/index.css",
               "src/styles.scss"
             ]
           },

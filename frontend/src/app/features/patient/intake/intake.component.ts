@@ -16,22 +16,17 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
     StepConfirmComponent,
   ],
   template: `
-    <div class="intake">
-      <button type="button" class="back-link back-btn" (click)="back()">&larr; Back</button>
-      <div
-        class="progress"
-        role="progressbar"
-        [attr.aria-valuenow]="stepParam()"
-        aria-valuemin="1"
-        aria-valuemax="3"
-      >
-        {{ i18n.t('stepXof3', { step: stepParam().toString() }) }}
+    <div class="intake p-4">
+      <div class="mb-8 text-center">
+        <p class="text-gray-600 text-sm">{{ i18n.t('stepXof3', { step: stepParam().toString() }) }}</p>
       </div>
-      <div class="progress-bar">
-        <div class="progress-fill" [style.width.%]="(stepParam() / 3) * 100"></div>
-      </div>
+      <div class="intake-card">
+        <button type="button" class="back-link back-btn mb-4" (click)="back()">&larr; Back</button>
+        <div class="progress-bar mb-6">
+          <div class="progress-fill" [style.width.%]="(stepParam() / 3) * 100"></div>
+        </div>
 
-      @switch (stepParam()) {
+        @switch (stepParam()) {
         @case (1) {
           <div class="fade-in">
             <app-step-context-risk (completed)="onContextRiskDone($event)" />
@@ -53,23 +48,26 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
           </div>
         }
       }
+      </div>
     </div>
   `,
   styles: [
     `
-      .intake {
-        padding: 0.5rem 0;
+      .intake { min-height: 100%; }
+      .intake-card {
+        background: white;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        padding: 1.5rem;
       }
       .back-link {
         display: inline-block;
-        margin-bottom: 1rem;
-        color: var(--p-accent, #0d47a1);
+        color: var(--p-accent, #2563eb);
         text-decoration: none;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
       }
-      .back-link:hover {
-        text-decoration: underline;
-      }
+      .back-link:hover { text-decoration: underline; }
       .back-btn {
         background: none;
         border: none;
@@ -77,23 +75,15 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
         font: inherit;
         cursor: pointer;
       }
-      .progress {
-        text-align: center;
-        font-weight: 600;
-        color: var(--p-accent, #0d47a1);
-        margin-bottom: 0.5rem;
-        font-size: 0.95rem;
-      }
       .progress-bar {
         height: 6px;
-        background: #e0e0e0;
+        background: #e5e7eb;
         border-radius: 3px;
-        margin-bottom: 1.5rem;
         overflow: hidden;
       }
       .progress-fill {
         height: 100%;
-        background: var(--p-accent, #0d47a1);
+        background: var(--p-accent, #2563eb);
         border-radius: 3px;
         transition: width 0.3s ease;
       }

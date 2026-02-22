@@ -136,7 +136,7 @@ export interface CheckInFormResult {
         align-items: center;
         justify-content: center;
         gap: 0.25rem;
-        border: 2px solid var(--p-accent, #0d47a1);
+        border: 2px solid #2563eb;
         border-radius: 14px;
         background: var(--p-card-bg, white);
         cursor: pointer;
@@ -154,7 +154,7 @@ export interface CheckInFormResult {
       .discomfort-btn .label {
         font-size: 0.9rem;
         font-weight: 700;
-        color: var(--p-accent, #0d47a1);
+        color: #2563eb;
       }
 
       /* Needs buttons */
@@ -182,9 +182,9 @@ export interface CheckInFormResult {
           background 0.15s;
       }
       .need-btn.selected {
-        border-color: var(--p-accent, #0d47a1);
-        background: var(--p-light-accent, #e3f2fd);
-        color: var(--p-accent, #0d47a1);
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #2563eb;
       }
       .need-icon {
         font-size: 1.3rem;
@@ -195,7 +195,7 @@ export interface CheckInFormResult {
         height: 64px;
         border-radius: 50%;
         border: none;
-        background: var(--p-accent, #0d47a1);
+        background: #2563eb;
         color: var(--p-accent-fg, white);
         font-size: 1.8rem;
         cursor: pointer;

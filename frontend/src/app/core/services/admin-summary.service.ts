@@ -19,6 +19,9 @@ export interface AdminSummary {
   totalPatients: number;
   avgBurden: number;
   alertDistribution: {
+    green: number;
+    amber: number;
+    red: number;
     greenPercent: number;
     amberPercent: number;
     redPercent: number;
@@ -26,6 +29,7 @@ export interface AdminSummary {
   missedCheckInRate: number;
   avgBurdenByFlag: Record<EquityFlagKey, number>;
   redRateByFlag: Record<EquityFlagKey, number>;
+  countByFlag: Record<EquityFlagKey, number>;
 }
 
 function hasFlag(flags: AccessibilityFlags | undefined, key: EquityFlagKey): boolean {
@@ -57,6 +61,9 @@ export class AdminSummaryService {
     const red = patients.filter((p) => toAlertStatusUpper(p.alertLevel) === 'RED').length;
 
     const alertDistribution = {
+      green,
+      amber,
+      red,
       greenPercent: total ? Math.round((green / total) * 100) : 0,
       amberPercent: total ? Math.round((amber / total) * 100) : 0,
       redPercent: total ? Math.round((red / total) * 100) : 0,
@@ -73,10 +80,12 @@ export class AdminSummaryService {
 
     const avgBurdenByFlag = {} as Record<EquityFlagKey, number>;
     const redRateByFlag = {} as Record<EquityFlagKey, number>;
+    const countByFlag = {} as Record<EquityFlagKey, number>;
 
     for (const key of EQUITY_FLAGS) {
       const subset = patients.filter((p) => hasFlag(p.flags, key));
       const n = subset.length;
+      countByFlag[key] = n;
       avgBurdenByFlag[key] = n
         ? Math.round(
             subset.reduce((s, p) => s + (p.burdenIndex ?? 0), 0) / n
@@ -93,6 +102,7 @@ export class AdminSummaryService {
       missedCheckInRate,
       avgBurdenByFlag,
       redRateByFlag,
+      countByFlag,
     };
   }
 }

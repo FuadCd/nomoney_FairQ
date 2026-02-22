@@ -13,33 +13,31 @@ import {
   standalone: true,
   imports: [CheckInFormComponent],
   template: `
-    <div class="checkin-page">
-      <button type="button" class="back-link back-btn" (click)="back()">&larr; Back</button>
-      <app-checkin-form (completed)="onComplete($event)" />
+    <div class="checkin-page p-4">
+      <button type="button" class="back-link back-btn mb-6" (click)="back()">&larr; Back</button>
+      <div class="checkin-card">
+        <app-checkin-form (completed)="onComplete($event)" />
+      </div>
     </div>
   `,
   styles: [
     `
-      .checkin-page {
-        padding: 0.5rem 0;
+      .checkin-page { max-width: 672px; margin: 0 auto; }
+      .checkin-card {
+        background: white;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        padding: 1.5rem;
       }
       .back-link {
         display: inline-block;
-        margin-bottom: 1rem;
-        color: var(--p-accent, #0d47a1);
+        color: var(--p-accent, #2563eb);
         text-decoration: none;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
       }
-      .back-link:hover {
-        text-decoration: underline;
-      }
-      .back-btn {
-        background: none;
-        border: none;
-        padding: 0;
-        font: inherit;
-        cursor: pointer;
-      }
+      .back-link:hover { text-decoration: underline; }
+      .back-btn { background: none; border: none; padding: 0; font: inherit; cursor: pointer; }
     `,
   ],
 })
