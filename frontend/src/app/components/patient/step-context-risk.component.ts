@@ -55,7 +55,12 @@ export interface ContextRiskResult {
           {{ incompleteError() }}
         </p>
       }
-      <button type="button" class="next-btn" (click)="submit()">
+      <button
+        type="button"
+        class="next-btn"
+        (click)="submit()"
+        [attr.aria-describedby]="incompleteError() ? 'step1-incomplete-error' : null"
+      >
         {{ i18n.t('continue') }}
       </button>
     </div>
@@ -162,9 +167,9 @@ export interface ContextRiskResult {
         text-align: center;
       }
       .next-btn {
-        pointer-events: auto;
         position: relative;
-        z-index: 1;
+        z-index: 9999;
+        pointer-events: auto;
         width: 100%;
         min-height: 64px;
         margin-top: 0.5rem;

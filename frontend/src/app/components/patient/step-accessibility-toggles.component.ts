@@ -38,7 +38,7 @@ interface ToggleItem {
           }
         </div>
       </fieldset>
-      <button type="button" class="next-btn" (click)="submit()">
+      <button type="button" class="next-btn" (click)="submit()" aria-label="Continue">
         {{ i18n.t('continue') }}
       </button>
     </div>
@@ -128,9 +128,6 @@ interface ToggleItem {
         color: #2563eb;
       }
       .next-btn {
-        pointer-events: auto;
-        position: relative;
-        z-index: 1;
         width: 100%;
         min-height: 56px;
         margin-top: 0.5rem;
