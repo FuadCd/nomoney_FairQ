@@ -14,6 +14,8 @@ export interface StoredPatient {
     discomfort: number;
     needsHelp: boolean;
     planningToLeave: boolean;
+    assistanceRequested?: string[];
+    planningToLeaveChoice?: string; // staying | unsure | leaving
     timestamp: number;
   }>;
   missedCheckIn?: boolean;
@@ -70,6 +72,8 @@ export class PatientsService {
       discomfort: dto.discomfortLevel,
       needsHelp: !!(dto.assistanceRequested?.length),
       planningToLeave: !dto.intendsToStay,
+      assistanceRequested: dto.assistanceRequested,
+      planningToLeaveChoice: dto.planningToLeaveChoice,
       timestamp: dto.timestamp ? new Date(dto.timestamp).getTime() : Date.now(),
     };
     patient.checkIns.push(checkIn);

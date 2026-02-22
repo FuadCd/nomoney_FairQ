@@ -8,6 +8,7 @@ export interface CheckInInput {
   discomfortLevel: number;
   assistanceRequested?: string[];
   intendsToStay: boolean;
+  planningToLeaveChoice?: string;
   timestamp?: string;
 }
 

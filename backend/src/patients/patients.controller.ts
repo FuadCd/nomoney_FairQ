@@ -32,7 +32,7 @@ export class PatientsController {
   @Post(':id/checkins')
   addCheckIn(
     @Param('id') id: string,
-    @Body() body: { discomfortLevel: number; assistanceRequested?: string[]; intendsToStay: boolean; timestamp?: string },
+    @Body() body: { discomfortLevel: number; assistanceRequested?: string[]; intendsToStay: boolean; planningToLeaveChoice?: string; timestamp?: string },
   ) {
     const dto = { passportId: id, ...body };
     const patient = this.patientsService.addCheckIn(dto);

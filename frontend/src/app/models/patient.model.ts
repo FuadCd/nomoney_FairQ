@@ -14,6 +14,10 @@ export interface CheckIn {
   discomfort: number; // 1-5
   needsHelp: boolean;
   planningToLeave: boolean;
+  /** For staff display: interpreter, mobility, quiet-space, info */
+  assistanceRequested?: string[];
+  /** For staff display: staying | unsure | leaving */
+  planningToLeaveChoice?: string;
   timestamp: number; // Date.now()
 }
 

@@ -27,7 +27,7 @@ export class PatientsService {
   /** Append check-in; returns updated patient + suggestions. */
   addCheckIn(
     patientId: string,
-    body: { discomfortLevel: number; assistanceRequested?: string[]; intendsToStay: boolean; timestamp?: string },
+    body: { discomfortLevel: number; assistanceRequested?: string[]; intendsToStay: boolean; planningToLeaveChoice?: string; timestamp?: string },
   ): Observable<{ patient: Patient | null; suggestedActions: string[]; nextCheckInMinutes: number }> {
     return this.api.post<{ patient: Patient | null; suggestedActions: string[]; nextCheckInMinutes: number }>(
       `/patients/${encodeURIComponent(patientId)}/checkins`,

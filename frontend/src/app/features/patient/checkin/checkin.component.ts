@@ -76,6 +76,7 @@ export class CheckinComponent {
         discomfortLevel: result.discomfort,
         assistanceRequested: assistanceRequested.length ? assistanceRequested : undefined,
         intendsToStay,
+        planningToLeaveChoice: result.planningToLeave,
         timestamp: new Date().toISOString(),
       })
       .subscribe({

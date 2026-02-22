@@ -6,6 +6,7 @@ type ProfileKey = keyof IntakeAccessibilityProfile;
 interface ToggleItem {
   key: ProfileKey;
   i18nKey: string;
+  icon: string;
 }
 
 @Component({
@@ -14,17 +15,20 @@ interface ToggleItem {
   template: `
     <div class="step">
       <h2 class="title">{{ i18n.t('accessibilityTitle') }}</h2>
-      <div class="toggles">
+      <p class="subtitle">{{ i18n.t('accessibilitySubtitle') }}</p>
+      <div class="accessibility-buttons">
         @for (item of toggles; track item.key) {
-          <label class="toggle-row">
-            <input
-              type="checkbox"
-              [checked]="profile()[item.key]"
-              (change)="toggle(item.key)"
-              [attr.aria-label]="i18n.t(item.i18nKey)"
-            />
-            <span class="toggle-label">{{ i18n.t(item.i18nKey) }}</span>
-          </label>
+          <button
+            type="button"
+            class="access-btn"
+            [class.selected]="profile()[item.key]"
+            (click)="toggle(item.key)"
+            [attr.aria-label]="i18n.t(item.i18nKey)"
+            [attr.aria-pressed]="profile()[item.key]"
+          >
+            <span class="access-icon">{{ item.icon }}</span>
+            {{ i18n.t(item.i18nKey) }}
+          </button>
         }
       </div>
       <button
@@ -50,41 +54,41 @@ interface ToggleItem {
         color: var(--p-fg, #1a1a1a);
         margin: 0;
       }
-      .toggles {
+      .subtitle {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin: -0.5rem 0 0;
+      }
+      .accessibility-buttons {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.5rem;
       }
-      .toggle-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        padding: 1rem;
+      .access-btn {
+        width: 100%;
+        min-height: 56px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        font-weight: 500;
+        text-align: left;
         border: 2px solid #e5e7eb;
-        border-radius: 0.5rem;
+        border-radius: 12px;
         background: var(--p-card-bg, white);
+        color: var(--p-fg, #1a1a1a);
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
         transition: border-color 0.15s, background 0.15s;
       }
-      .toggle-row:hover {
-        border-color: #93c5fd;
-      }
-      .toggle-row:has(input:checked) {
+      .access-btn.selected {
         border-color: #2563eb;
         background: #eff6ff;
+        color: #2563eb;
       }
-      .toggle-row input[type='checkbox'] {
-        width: 22px;
-        height: 22px;
-        margin: 0;
+      .access-icon {
+        font-size: 1.4rem;
         flex-shrink: 0;
-        accent-color: var(--p-accent, #0d47a1);
-        cursor: pointer;
-      }
-      .toggle-label {
-        font-size: 1rem;
-        line-height: 1.4;
-        color: var(--p-fg, #1a1a1a);
       }
       .next-btn {
         width: 100%;
@@ -110,12 +114,12 @@ export class StepAccessibilityTogglesComponent {
   readonly i18n = inject(I18nService);
 
   readonly toggles: ToggleItem[] = [
-    { key: 'chronicPain', i18nKey: 'toggle_chronicPain' },
-    { key: 'mobility', i18nKey: 'toggle_mobility' },
-    { key: 'sensory', i18nKey: 'toggle_sensory' },
-    { key: 'cognitive', i18nKey: 'toggle_cognitive' },
-    { key: 'alone', i18nKey: 'toggle_alone' },
-    { key: 'language', i18nKey: 'toggle_language' },
+    { key: 'chronicPain', i18nKey: 'toggle_chronicPain', icon: '😣' },
+    { key: 'mobility', i18nKey: 'toggle_mobility', icon: '♿' },
+    { key: 'sensory', i18nKey: 'toggle_sensory', icon: '🎧' },
+    { key: 'cognitive', i18nKey: 'toggle_cognitive', icon: '🧠' },
+    { key: 'alone', i18nKey: 'toggle_alone', icon: '👤' },
+    { key: 'language', i18nKey: 'toggle_language', icon: '🌐' },
   ];
 
   readonly profile = signal<IntakeAccessibilityProfile>({

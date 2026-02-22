@@ -7,7 +7,7 @@ import { PatientStoreService } from '../../core/patient-store.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { BurdenUpdaterService } from '../../core/burden-updater.service';
 import { PatientsService } from '../../core/services/patients.service';
-import { Patient, AccessibilityFlags } from '../../models/patient.model';
+import { Patient, CheckIn, AccessibilityFlags } from '../../models/patient.model';
 
 const MEDIAN_PHYSICIAN_MINUTES = 87;
 const SYNC_INTERVAL_MS = 3000;
@@ -195,6 +195,21 @@ const SYNC_INTERVAL_MS = 3000;
                         </div>
                       }
 
+                      @if (getLatestCheckIn(p); as last) {
+                        <div class="checkin-card mb-4 p-3 rounded-lg border border-blue-200 bg-blue-50/50">
+                          <p class="text-xs font-semibold text-blue-800 mb-2 flex items-center gap-1">
+                            <span>📋</span> Latest check-in {{ formatCheckInTime(last.timestamp) }}
+                          </p>
+                          <div class="space-y-1.5 text-sm">
+                            <p><span class="font-medium">Feeling:</span> {{ getDiscomfortLabel(last.discomfort) }} {{ getDiscomfortEmoji(last.discomfort) }}</p>
+                            <p><span class="font-medium">Planning:</span> {{ getPlanningLabel(last) }}</p>
+                            @if (last.assistanceRequested?.length) {
+                              <p><span class="font-medium">Needs:</span> {{ getNeedsLabel(last.assistanceRequested ?? []) }}</p>
+                            }
+                          </div>
+                        </div>
+                      }
+
                       @if (hasLwbsRisk(p)) {
                         <div class="flex items-center gap-2 p-2 bg-red-100 border border-red-300 rounded-lg mb-4">
                           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -372,6 +387,65 @@ export class StaffComponent implements OnInit, OnDestroy {
 
   getFlagItems(flags: AccessibilityFlags): { key: string; label: string; icon: string }[] {
     return this.flagConfig.filter((f) => flags[f.key]).map((f) => ({ key: f.key, label: f.label, icon: f.icon }));
+  }
+
+  getLatestCheckIn(p: Patient): CheckIn | undefined {
+    return p.checkIns?.length ? p.checkIns[p.checkIns.length - 1] : undefined;
+  }
+
+  isNewCheckIn(timestamp: number): boolean {
+    const now = this.store.getCurrentTime();
+    return (now - timestamp) < 2 * 60 * 1000; // within 2 min
+  }
+
+  formatCheckInTime(timestamp: number): string {
+    const now = this.store.getCurrentTime();
+    const mins = Math.round((now - timestamp) / 60_000);
+    if (mins < 1) return '(just now)';
+    if (mins === 1) return '(1 min ago)';
+    return `(${mins} min ago)`;
+  }
+
+  private readonly discomfortLabels: Record<number, string> = {
+    1: 'Minimal',
+    2: 'Mild',
+    3: 'Moderate',
+    4: 'Severe',
+    5: 'Emergency',
+  };
+
+  private readonly discomfortEmojis: Record<number, string> = {
+    1: '🙂',
+    2: '😕',
+    3: '😣',
+    4: '😫',
+    5: '🆘',
+  };
+
+  getDiscomfortLabel(level: number): string {
+    return this.discomfortLabels[level] ?? `Level ${level}`;
+  }
+
+  getDiscomfortEmoji(level: number): string {
+    return this.discomfortEmojis[level] ?? '';
+  }
+
+  getPlanningLabel(c: CheckIn): string {
+    const choice = c.planningToLeaveChoice ?? (c.planningToLeave ? 'leaving' : 'staying');
+    if (choice === 'staying') return 'Staying';
+    if (choice === 'unsure') return 'Unsure';
+    return 'Thinking of leaving';
+  }
+
+  private readonly needLabels: Record<string, string> = {
+    interpreter: 'Interpreter',
+    'quiet-space': 'Quiet space',
+    info: 'More info',
+    mobility: 'Mobility help',
+  };
+
+  getNeedsLabel(keys: string[]): string {
+    return keys.map((k) => this.needLabels[k] ?? k).join(', ');
   }
 
   hasLwbsRisk(p: Patient): boolean {
