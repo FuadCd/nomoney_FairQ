@@ -6,7 +6,89 @@ FairQ is a real-time accessibility equity layer for emergency departments. It mo
 
 ---
 
+## 🚨 Problem
+
+Emergency departments measure **wait time**. They do not measure **waiting burden**.
+
+Two patients with identical wait times can experience radically different distress due to:
+
+- Mobility impairment
+- Chronic pain
+- Language barriers
+- Sensory sensitivity
+- Being alone
+
+This creates **invisible inequity**.
+
+## 💡 Solution
+
+FairQ introduces an **accessibility-adjusted burden index** that weights wait time by vulnerability. Staff see who is at elevated risk of distress or leaving without being seen (LWBS), with suggested actions to support patients equitably.
+
+---
+
+## 🛠 Technical Highlights
+
+- Accessibility-weighted burden modeling engine
+- Real-time burden refresh with backend simulation
+- Alert threshold system (Green/Amber/Red)
+- LWBS risk integration from Alberta HQCA data
+- Vulnerability multiplier derived from StatsCan disability data
+- Modular NestJS architecture with RESTful endpoints
+- Angular SPA with route guards and session-based auth
+- Dockerized full-stack deployment
+
+---
+
+## Screenshots
+
+### Staff Dashboard
+
+![Staff Dashboard](docs/screenshots/staff-dashboard.png)
+
+Queue view with burden index, LWBS risk, accessibility flags, and suggested actions per patient.
+
+### Admin Dashboard
+
+![Admin Dashboard](docs/screenshots/admin-dashboard.png)
+
+Model health and alert distribution.
+
+### Equity Overview
+
+![Equity Overview](docs/screenshots/admin-equity-overview.png)
+
+Burden analysis by accessibility needs (mobility, pain, sensory, cognitive, language, alone).
+
+### Patient Intake
+
+| Step 1: Hospital & Discomfort | Step 2: Accessibility | Waiting View |
+|-------------------------------|------------------------|--------------|
+| ![Patient Intake Step 1](docs/screenshots/patient-intake-step1.png) | ![Patient Intake Step 2](docs/screenshots/patient-intake-step2.png) | ![Patient Waiting](docs/screenshots/patient-waiting.png) |
+
+---
+
 ## Architecture
+
+### Data Flow Diagram
+
+```mermaid
+flowchart TD
+    A[Patient Intake] --> B[Accessibility Profile]
+    B --> C[Vulnerability Multiplier]
+    A --> D[Wait Time Snapshot]
+    D --> E[AHS + HQCA]
+    C --> F[Burden Engine]
+    E --> F
+    F --> G[CIHI + McMaster]
+    G --> H[Staff Dashboard Alerts]
+    G --> I[Admin Equity Overview]
+```
+
+*Patient Intake → Accessibility Profile → Vulnerability Multiplier → Wait Time Snapshot (AHS + HQCA) → Burden Engine (CIHI + McMaster) → Staff Dashboard Alerts*
+
+---
+
+## Project Structure
 
 ```
 nomoney/
@@ -257,6 +339,14 @@ FairQ does **not** diagnose, prioritize treatment, or provide medical advice. It
 | **Patient** | Accessibility intake, burden curves, check-in form (discomfort, planning to stay/leave, needs) |
 | **Staff** | Queue Equity View, LWBS risk, suggested actions, staff check-in recording, send to doctor (off queue) |
 | **Admin** | Model health & equity overview — observation only (no thresholds, weights, or patient overrides) |
+
+---
+
+## ⚠️ Limitations
+
+- Uses **snapshot wait-time data** (not real-time AHS API integration)
+- **Vulnerability weights** are impact-informed, not clinically validated
+- **In-memory patient store** (no persistent database in current version)
 
 ---
 
