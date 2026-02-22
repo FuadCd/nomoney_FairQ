@@ -16,7 +16,7 @@ import { AuthService } from '../../core/auth/auth.service';
               <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
-              <h1 class="text-2xl font-bold text-gray-900">AccessER</h1>
+              <h1 class="text-2xl font-bold text-gray-900">FairQ</h1>
             </div>
             <p class="text-sm text-gray-600 text-center mb-6">Accessibility-Adjusted Emergency Room Burden</p>
           </header>
