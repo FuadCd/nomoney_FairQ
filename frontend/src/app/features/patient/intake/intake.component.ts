@@ -22,7 +22,7 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
         <p class="text-gray-600 text-sm" aria-live="polite">{{ i18n.t('stepXof3', { step: stepParam().toString() }) }}</p>
       </div>
       <div class="intake-card">
-        <button type="button" class="back-link back-btn mb-4" (click)="back()" aria-label="Back to previous step">&larr; Back</button>
+        <button type="button" class="back-link back-btn mb-4" (click)="back()">&larr; Back</button>
         <div class="progress-bar mb-6" role="progressbar" [attr.aria-valuenow]="stepParam()" aria-valuemin="1" aria-valuemax="3" [attr.aria-label]="'Step ' + stepParam() + ' of 3'">
           <div class="progress-fill" [style.width.%]="(stepParam() / 3) * 100"></div>
         </div>
@@ -81,6 +81,9 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
       }
       .back-link:hover { text-decoration: underline; }
       .back-btn {
+        pointer-events: auto;
+        position: relative;
+        z-index: 1;
         background: none;
         border: none;
         padding: 0.5rem 0;
@@ -89,6 +92,10 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
         min-height: 44px;
         display: inline-flex;
         align-items: center;
+      }
+      .progress-bar,
+      .progress-fill {
+        pointer-events: none;
       }
       .progress-bar {
         height: 6px;

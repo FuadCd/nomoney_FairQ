@@ -37,7 +37,6 @@ const VULN_WEIGHTS: Record<keyof IntakeAccessibilityProfile, number> = {
         type="button"
         class="confirm-btn"
         (click)="onConfirm()"
-        [disabled]="loading()"
         [attr.aria-busy]="loading()"
       >
         @if (loading()) {
@@ -88,6 +87,9 @@ const VULN_WEIGHTS: Record<keyof IntakeAccessibilityProfile, number> = {
         color: var(--p-muted, #555);
       }
       .confirm-btn {
+        pointer-events: auto;
+        position: relative;
+        z-index: 1;
         width: 100%;
         min-height: 64px;
         font-size: 1.2rem;
@@ -105,7 +107,7 @@ const VULN_WEIGHTS: Record<keyof IntakeAccessibilityProfile, number> = {
         transform: scale(0.97);
         opacity: 0.9;
       }
-      .confirm-btn:disabled {
+      .confirm-btn[aria-busy="true"] {
         opacity: 0.7;
         cursor: wait;
       }
@@ -163,6 +165,7 @@ export class StepConfirmComponent {
   });
 
   onConfirm(): void {
+    if (this.loading()) return;
     this.loading.set(true);
     const profile = this.accessibilityProfile();
     const vulnerabilityScore = Object.entries(VULN_WEIGHTS).reduce(

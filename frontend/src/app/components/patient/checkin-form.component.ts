@@ -65,7 +65,7 @@ export interface CheckInFormResult {
             }
           </div>
         </fieldset>
-        <button type="button" class="continue-btn" (click)="confirmNeeds()" aria-label="Continue">
+        <button type="button" class="continue-btn" (click)="confirmNeeds()">
           {{ i18n.t('continue') }}
         </button>
       </div>
@@ -274,6 +274,9 @@ export interface CheckInFormResult {
         color: #2563eb;
       }
       .continue-btn {
+        pointer-events: auto;
+        position: relative;
+        z-index: 1;
         width: 100%;
         min-height: 56px;
         margin-top: 0.5rem;

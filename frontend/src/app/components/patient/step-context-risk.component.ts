@@ -55,14 +55,9 @@ export interface ContextRiskResult {
           {{ incompleteError() }}
         </p>
       }
-      <button
-        type="button"
-        class="next-btn"
-        (click)="submit()"
-        [attr.aria-describedby]="incompleteError() ? 'step1-incomplete-error' : null"
-        [class.next-btn-dimmed]="!canSubmit()"
-        aria-label="Continue"
-      >{{ i18n.t('continue') }}</button>
+      <button type="button" class="next-btn" (click)="submit()">
+        {{ i18n.t('continue') }}
+      </button>
     </div>
   `,
   styles: [
@@ -71,6 +66,7 @@ export interface ContextRiskResult {
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
+        pointer-events: auto;
       }
       .question {
         font-size: 1.25rem;
@@ -166,25 +162,27 @@ export interface ContextRiskResult {
         text-align: center;
       }
       .next-btn {
+        pointer-events: auto;
+        position: relative;
+        z-index: 1;
         width: 100%;
-        min-height: 56px;
+        min-height: 64px;
         margin-top: 0.5rem;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: 700;
         background: var(--p-accent, #0d47a1);
         color: var(--p-accent-fg, white);
         border: none;
-        border-radius: 12px;
+        border-radius: 16px;
         cursor: pointer;
-        transition: opacity 0.15s;
-        /* Voice Control: ensure button is always hit-testable (no overlay can block) */
-        pointer-events: auto;
+        transition: transform 0.1s, opacity 0.1s;
       }
-      .next-btn:hover:not(.next-btn-dimmed) {
+      .next-btn:hover {
         opacity: 0.95;
       }
-      .next-btn-dimmed {
-        opacity: 0.5;
+      .next-btn:active {
+        transform: scale(0.97);
+        opacity: 0.9;
       }
       .step1-error {
         margin: 0;
