@@ -1,12 +1,13 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth/auth.service';
+import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.component';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, QrScannerComponent],
   template: `
     <div class="landing-wrap">
       <div class="landing-inner">
@@ -54,8 +55,20 @@ import { AuthService } from '../../core/auth/auth.service';
           >
             I'm a patient
           </button>
+
+          <button
+            type="button"
+            (click)="openQrScanner()"
+            class="landing-btn landing-btn-scan mt-3"
+          >
+            Scan QR Code
+          </button>
         </div>
       </div>
+
+      @if (showQrScanner()) {
+        <app-qr-scanner (closed)="closeQrScanner()" />
+      }
     </div>
   `,
   styles: [
@@ -120,6 +133,12 @@ import { AuthService } from '../../core/auth/auth.service';
         color: white;
       }
       .landing-btn-patient:hover { background: #15803d; }
+      .landing-btn-scan {
+        background: transparent;
+        color: #2563eb;
+        border: 2px solid #2563eb;
+      }
+      .landing-btn-scan:hover { background: #eff6ff; }
     `,
   ],
 })
@@ -129,6 +148,15 @@ export class LandingComponent {
 
   hospitalCode = '';
   codeError = '';
+  showQrScanner = signal(false);
+
+  openQrScanner(): void {
+    this.showQrScanner.set(true);
+  }
+
+  closeQrScanner(): void {
+    this.showQrScanner.set(false);
+  }
 
   submitCode(): void {
     this.codeError = '';

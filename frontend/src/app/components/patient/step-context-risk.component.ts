@@ -1,4 +1,4 @@
-import { Component, output, signal, inject } from '@angular/core';
+import { Component, output, signal, inject, input, effect } from '@angular/core';
 import { I18nService } from '../../features/patient/patient.component';
 import { INTAKE_HOSPITALS } from './step-hospital.component';
 
@@ -153,8 +153,18 @@ export class StepContextRiskComponent {
   readonly completed = output<ContextRiskResult>();
   readonly i18n = inject(I18nService);
   readonly hospitals = INTAKE_HOSPITALS;
+  readonly initialHospitalKey = input<string | undefined>();
 
   readonly hospitalKey = signal('');
+
+  constructor() {
+    effect(() => {
+      const init = this.initialHospitalKey();
+      if (init && this.hospitals.some((h) => h.key === init)) {
+        this.hospitalKey.set(init);
+      }
+    });
+  }
   readonly discomfortLevel = signal<number | null>(null);
 
   readonly discomfortLevels = [

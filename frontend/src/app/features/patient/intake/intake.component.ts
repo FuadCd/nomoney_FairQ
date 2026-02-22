@@ -1,5 +1,6 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, effect } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { I18nService, IntakeAccessibilityProfile } from '../patient.component';
@@ -29,7 +30,10 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
         @switch (stepParam()) {
         @case (1) {
           <div class="fade-in">
-            <app-step-context-risk (completed)="onContextRiskDone($event)" />
+            <app-step-context-risk
+              [initialHospitalKey]="initialHospitalFromQuery()"
+              (completed)="onContextRiskDone($event)"
+            />
           </div>
         }
         @case (2) {
@@ -115,10 +119,22 @@ export class IntakeComponent {
   readonly i18n = inject(I18nService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private auth = inject(AuthService);
 
   readonly stepParam = toSignal(
     this.route.paramMap.pipe(map((p) => Math.min(3, Math.max(1, +(p.get('step') ?? 1) || 1)))),
     { initialValue: 1 }
+  );
+  readonly initialHospitalFromQuery = toSignal(
+    this.route.queryParamMap.pipe(
+      map((q) => {
+        const h = q.get('hospital');
+        if (!h || typeof h !== 'string') return undefined;
+        const valid = ['uofa', 'royalAlexandra', 'greyNuns', 'misericordia', 'sturgeon'];
+        return valid.includes(h) ? h : undefined;
+      })
+    ),
+    { initialValue: undefined as string | undefined }
   );
   readonly hospitalKey = signal<string>('');
   readonly discomfortLevel = signal(1);
@@ -136,6 +152,11 @@ export class IntakeComponent {
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem('patient_id', this.anonymousId);
     }
+    effect(() => {
+      if (this.initialHospitalFromQuery()) {
+        this.auth.setPatientSession();
+      }
+    });
   }
 
   onContextRiskDone(data: ContextRiskResult): void {
